@@ -709,7 +709,7 @@ hachés : veuillez mettre à jour la ligne surlignée de la méthode <strong>reg
         tempUser = new User();
         tempUser.setLogin(login);
         tempUser.setPassword(tempUser.hashPassword(password));
-</code></pre><br/><h1><a id="sectionE"></a>f) Autorisation JWT, filtres, providers &amp; &quot;Name binding&quot;</h1><h2>f.1) Vérification d&#x27;un token : concepts généraux</h2><p>La vérification d’un token n’est nécessaire que pour les opérations sur les ressources
+</code></pre><br/><h1><a id="sectionF"></a>f) Autorisation JWT, filtres, providers &amp; &quot;Name binding&quot;</h1><h2>f.1) Vérification d&#x27;un token : concepts généraux</h2><p>La vérification d’un token n’est nécessaire que pour les opérations sur les ressources
 qui doivent être protégées (ou autorisées).</p><p>Le code générique pour vérifier un token est donné ici :
 <a href="https://github.com/auth0/java-jwt#verify-a-token">https://github.com/auth0/java-jwt#verify-a-token</a>.</p><br/><p>Il serait peu intéressant de devoir réimplémenter ce code pour chaque opération nécessitant
 une autorisation JWT.</p><br/><p>Ce que nous souhaitons, c’est :</p><ul><li>Pouvoir annoter chaque méthode d’une Root Resource devant être autorisée par JWT :
@@ -832,7 +832,7 @@ JavaScript / CSS) pour tester vos APIs. Cela prendrait trop de temps. </p><p>Nou
 plus aisé de rester au sein du même environnement de développement en utilisant le client HTTP
 d&#x27;IntelliJ.</p><br/><h2>g.2) HTTP Client d&#x27;IntelliJ avec des JWT</h2><p>IntelliJ permet d&#x27;ajouter des scripts associés aux réponses de cette façon :</p><pre><code class="language-text">GET host/api/test
 
-&gt; {%
+&gt; &amp;#123; %
 // Response Handler Script
 ...
 %}
