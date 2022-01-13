@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
-Sitemap: https://e-vinci.github.io/baja-website/sitemap/sitemap-index.xml
+Sitemap: https://e-vinci.github.io/baja/sitemap/sitemap-index.xml
 Host: https://e-vinci.github.io
