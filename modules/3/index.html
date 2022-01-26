@@ -47,7 +47,7 @@ Modifiez cette classe :</li></ul><pre><code class="language-java" metastring="{3
 </code></pre><ul><li>Vérifiez dans <strong>FilmDataService</strong> et <strong>UserDataService</strong> que <strong>jsonDB</strong> est créé en passant
 l&#x27;interface (et non l&#x27;implémentation), par exemple pour <strong>UserDataService</strong> :</li></ul><pre><code class="language-java">private static Json&lt;User&gt; jsonDB = new Json&lt;&gt;(User.class);
 </code></pre><br/><p>A ce stade-ci, la librairie Jackson qui s&#x27;occupe de la désérialisation ne sait pas
-quelle implémentation est à utiliser pour les POJOs. </p><br/><p>Si vous exécutez l&#x27;application, elle lancera des exceptions lorsque vous appelerez certaines
+quelle implémentation est à utiliser pour les POJOs. </p><br/><p>Si vous exécutez l&#x27;application, elle lancera des exceptions lorsque vous appellerez certaines
 opérations.</p><br/><h2>a.3) Désérialisation vers des POJOs cachés par une interface</h2><p>Afin de diminuer le couplage des objets, les objets du domaine sont cachés
 derrière des interfaces.</p><br/><p>Afin que Jackson sache quelle implémentation est à utiliser pour la désérialisation
 de JSON vers des POJOs associés à une interface, il faut l’indiquer via l’annotation
@@ -60,7 +60,7 @@ public interface Film {
 
 @JsonDeserialize(as = UserImpl.class)
 public interface User {
-</code></pre><br/><p>Veuillez exécuter l&#x27;application et vous assurer que tout est en ordre.</p><br/><h2>a.4) L’injection de dépendances</h2><p>Afin d’injecter des dépendances au sein d’une application implémentant Jackarta EE,
+</code></pre><br/><p>Veuillez exécuter l&#x27;application et vous assurer que tout est en ordre.</p><br/><h2>a.4) L’injection de dépendances</h2><p>Afin d’injecter des dépendances au sein d’une application implémentant Jakarta EE,
 « Jakarta Dependency Injection » (ou Jakarta DI) permet d’obtenir des objets tout
 en maximisant la réutilisation, la testabilité et la maintenabilité en comparaison
 avec des approches plus traditionnelles (utilisation de constructeurs…).</p><p>Pour pouvoir utiliser les API d’injection de dépendances au sein de Jersey,
@@ -95,7 +95,7 @@ public class ApplicationBinder extends AbstractBinder {
 Veuillez mettre à jour <strong>ResourceConfig</strong> :</li></ul><pre><code class="language-java" metastring="{3}">final ResourceConfig rc = new ResourceConfig().packages(&quot;be.vinci.api&quot;)
         .register(JacksonFeature.class)
         .register(ApplicationBinder.class);
-</code></pre><ul><li>Pour rappel, l’annotation <strong>@Provider</strong> ci-desssus permet de fournir notre propre implémentation
+</code></pre><ul><li>Pour rappel, l’annotation <strong>@Provider</strong> ci-dessus permet de fournir notre propre implémentation
 d’un provider, de la rendre disponible à l’exécution, à notre application JAX-RS.</li><li>Nous allons maitenant injecter la factory via l&#x27;annotation <strong>@Inject</strong>, qui sera injectée
 sous forme de Singleton (une et une seule instance) conformément à sa configuration
 au sein de l&#x27;<strong>AbstractBinder</strong>. Veuillez mettre à jour le code de <strong>UserDataService</strong> :</li></ul><pre><code class="language-java" metastring="{3,9}">public class UserDataService {
@@ -200,7 +200,7 @@ réponse au client soient traitées de manière centralisée plutôt que de gér
 y-compris les <strong>WebApplicationException</strong> lancées dans les Root Resources.</p><p>La centralisation de ces traitements d&#x27;exception peut se faire au sein d&#x27;un <strong>ExceptionMapper</strong>.
 C&#x27;est un lieu idéal pour traiter de toutes les codes et messages d&#x27;erreur à envoyer aux client,
 pour créer des logs...</p><br/><p>Nous allons créer une <strong>ExceptionMapper</strong> nommé <strong>WebExceptionMapper</strong> dans le package <strong>utils</strong>
-qui doit attrapper toutes les exceptions, afficher la stack trace, puis envoyer une réponse
+qui doit attraper toutes les exceptions, afficher la stack trace, puis envoyer une réponse
 au client. Si de l&#x27;exception est de type <strong>WebApplicationException</strong>, on souhaite envoyer une réponse contenant le <strong>status</strong>
 et <strong>message</strong> de celle-ci. Sinon on renvoie le code d&#x27;erreur <strong>INTERNAL_SERVER_ERROR</strong> et
 le message associé à l&#x27;exception  :</p><pre><code class="language-java">package be.vinci.utils;
@@ -533,7 +533,7 @@ par contre, ça ne l&#x27;est pas si vous devez sérialiser des <strong>boolean<
 <strong>false</strong> pour un attribut : il sera d&#x27;office filtré (valeur par défaut d&#x27;un boolean)
 même si ça n&#x27;est pas ce que l&#x27;on veut.
 N&#x27;hésitez pas à visualiser ce scénario si cela vous intéresse : il suffit d&#x27;appliquer la vue <strong>Public</strong>
-à l&#x27;attribut <strong>married</strong> de <strong>UserImpl</strong> et de réexecuter la dernière requête HTTP
+à l&#x27;attribut <strong>married</strong> de <strong>UserImpl</strong> et de réexécuter la dernière requête HTTP
 de <strong>users.http</strong>.</p><br/><p>Pour résoudre cette dernière partie, nous pouvons utiliser les &quot;<strong>Wrappers</strong>&quot;
 des types primitifs : <strong>Integer</strong>, <strong>Boolean</strong>.</p><br/><p>Veuillez convertir <strong>age</strong> en <strong>Integer</strong> et <strong>married</strong> en <strong>Boolean</strong> au sein de <strong>UserImpl</strong>.
 Pour ce faire via IntelliJ : clic droit sur le type d&#x27;un attribut, <strong>Refactor</strong>,
@@ -550,7 +550,7 @@ par exemple, si vous devez sérialiser des données que lors de l&#x27;envoi des
 et que vous souhaitez toujours filtrer les mêmes données, alors ce mécanisme vous est recommandé.</p><br/><p>C&#x27;est éventuellement le cas lorsque l&#x27;on utilise une base de données pour faire
 persister les données.
 Il n&#x27;est dès lors pas nécessaire de sérialiser les données tant pour les enregistrer<br/>
-<!-- -->dans un fichier JSON, on doit juste renvoyer des données JSON pour répondre aux requêtes clientes.</p><br/><p>Voici au sein de <strong>UserImpl</strong> un exemple de commment filtrer l&#x27;attribut <strong>password</strong>
+<!-- -->dans un fichier JSON, on doit juste renvoyer des données JSON pour répondre aux requêtes clientes.</p><br/><p>Voici au sein de <strong>UserImpl</strong> un exemple de comment filtrer l&#x27;attribut <strong>password</strong>
 pour toutes les opérations de sérialisation d&#x27;un <strong>User</strong> :</p><pre><code class="language-java" metastring="{1}">class UserImpl implements User {
     private int id;
     private String login;

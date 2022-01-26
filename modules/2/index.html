@@ -4,7 +4,7 @@ Voici les motivations pour réarchitecturer l&#x27;API :</p><ol><li>Souhait de n
 s&#x27;occupant des réponses aux requêtes clients, au code associé à la gestion des données ;
 on veut pouvoir mettre à jour la couche d&#x27;accès aux données sans devoir mettre à jour les Root Ressources.</li><li>La partie business de l&#x27;application, en d&#x27;autres mots la logique d&#x27;accès aux opérations sur les
 données, ne doit pas être séparée de la gestion des données.</li><li>On veut pouvoir rapidement distinguer certaines parties de code : les objets du domaine, le main,<br/>les opérations offertes sur les ressources, les utilitaires, la logique d&#x27;accès
-aux opérations sur les données et la gestion des donnnées.</li></ol><br/><p>Pour ce faire, nous veuillez créér ces packages au sein de votre API gérant les films :</p><ul><li><strong>api</strong> : s&#x27;occupera des Root Resources et donc de la présentation des ressources aux clients.</li><li><strong>domain</strong> : incluera tous les objets du domaines, les sacs de données.</li><li><strong>main</strong> : gère le démarrage de l&#x27;application JAX-RS.</li><li><strong>services</strong> : permet de traiter de la logique d&#x27;accès aux opérations sur les données et la gestion de
+aux opérations sur les données et la gestion des données.</li></ol><br/><p>Pour ce faire, nous veuillez créer ces packages au sein de votre API gérant les films :</p><ul><li><strong>api</strong> : s&#x27;occupera des Root Resources et donc de la présentation des ressources aux clients.</li><li><strong>domain</strong> : inclura tous les objets du domaines, les sacs de données.</li><li><strong>main</strong> : gère le démarrage de l&#x27;application JAX-RS.</li><li><strong>services</strong> : permet de traiter de la logique d&#x27;accès aux opérations sur les données et la gestion de
 ces données.</li><li><strong>utils</strong> : traite des morceaux de code réutilisables sur potentiellement toutes les applications
 JAX-RS (gestion de la config par exemple).</li></ul><br/><p>Veuillez déplacer vos classes dans les bons packages.
 La classe <strong>Json</strong> est à reprendre actuellement au sein du package <strong>services</strong>.</p><br/><p>Au sein du package <strong>services</strong>, veuillez créer une nouvelle classe <strong>FilmDataService</strong> qui
@@ -308,7 +308,7 @@ DatabaseFilePath=db.json
 se trouvant dans le fichier <strong>/dev.properties</strong> se fait dans le <strong>Main</strong>, au début de l&#x27;exécution
 de la méthode <strong>main</strong>, ou même avant l&#x27;exécution de cette méthode.
 Vous pourriez ajouter cette ligne dans la fonction <strong>main</strong>, avant de créer le serveur Http :</p><pre><code class="language-java">Config.load(&quot;dev.properties&quot;);
-</code></pre><br/><p>Mais nous vous proposons d&#x27;utiliser un initialisateur static qui sera appelé avant la méthode
+</code></pre><br/><p>Mais nous vous proposons d&#x27;utiliser un initialiseur &quot;static&quot; qui sera appelé avant la méthode
 <strong>main</strong>. Veuillez mettre à jour votre classe <strong>Main</strong> en ajoutant :</p><pre><code class="language-java" metastring="{2-4}">public class Main {
     static{
         Config.load(&quot;dev.properties&quot;);
@@ -325,7 +325,7 @@ vers le fichier <strong>db.json</strong> :</p><pre><code class="language-java" m
     private static final String DB_FILE_PATH = Config.getProperty(&quot;DatabaseFilePath&quot;);
 </code></pre><br/><h1><a id="sectionC"></a>c) Rappel de conventions sur les RESTful APIs, authentification &amp; autorisation</h1><h2>c.1) Conventions sur les RESTful APIs</h2><p>Pour rappel, un RESTful web service, ou RESTful API, met à disposition des opérations
 sur des ressources. Ces opérations seront disponibles via des requêtes http associées à des
-URLs construites selon les conventions RESTful.</p><br/><p>Certaines opérations sont protégées par des token JWT.
+URLs construites selon les conventions RESTful.</p><br/><p>Certaines opérations sont protégées par des tokens JWT.
 Ainsi, tout client souhaitant accéder à ces opérations devra fournir un token dans le header
 de la requête.
 Le client devra donc mémoriser le token reçu lors de son enregistrement (<strong>auths/register</strong>) ou
@@ -349,7 +349,7 @@ dans <strong>pom.xml</strong>, vous pouvez probablement résoudre cela en faisan
             &lt;version&gt;3.18.2&lt;/version&gt;
 &lt;/dependency&gt;
 </code></pre><br/><h2>d.2) Création du token JWT</h2><h3>d.2.1) Introduction</h3><p>Un token JWT doit être créé lors de l&#x27;authentification d&#x27;un utilisateur, au login ou à
-l&#x27;enregistrement de celui-ci.</p><p>Nous allons donc créer les opérations <strong>login</strong> et <strong>register</strong> pour des ressources de type <strong>User</strong>.</p><br/><p>Pour ce faire, voici les étapes que nous allons suivre :</p><ul><li>Ajout d&#x27;une propriété pour gérer le secret associé à la signature des token.</li><li>Création d&#x27;une classe <strong>User</strong> qui va permettre de sérialiser les données du monde Java vers
+l&#x27;enregistrement de celui-ci.</p><p>Nous allons donc créer les opérations <strong>login</strong> et <strong>register</strong> pour des ressources de type <strong>User</strong>.</p><br/><p>Pour ce faire, voici les étapes que nous allons suivre :</p><ul><li>Ajout d&#x27;une propriété pour gérer le secret associé à la signature des tokens.</li><li>Création d&#x27;une classe <strong>User</strong> qui va permettre de sérialiser les données du monde Java vers
 le monde JSON.</li><li>Création d&#x27;une classe <strong>UserDataService</strong> qui va permettre de gérer les données associées aux
 utilisateurs et qui va offrir les services d&#x27;accès aux données et la logique pour le <strong>login</strong>
 et le <strong>register</strong>.</li><li>Création d&#x27;une Root Resource <strong>AuthsResource</strong> qui va s&#x27;occuper de gérer la présentation des
@@ -699,7 +699,7 @@ mettre à jour la fonction <strong>checkPassword</strong> : </p><pre><code class
 public String hashPassword(String password) {
     return BCrypt.hashpw(password, BCrypt.gensalt());
 }
-</code></pre><br/><p>Attention, maintenant que nous utilisons les password hachés, il faut supprimer l&#x27;ancienne base
+</code></pre><br/><p>Attention, maintenant que nous utilisons les passwords hachés, il faut supprimer l&#x27;ancienne base
 de donnée des utilisateurs. Vous devez soit effacer la collection <strong>users</strong> du fichier <strong>db.json</strong>,
 soit vous pouvez aussi directement effacer le fichier <strong>db.json</strong>.</p><br/><p>Il ne reste plus qu&#x27;à modifier légérement <strong>UserDataService</strong> afin d&#x27;enregistrer les passwords
 hachés : veuillez mettre à jour la ligne surlignée de la méthode <strong>register</strong> :</p><pre><code class="language-java" metastring="{7}">public ObjectNode register(String login, String password) {
@@ -801,7 +801,7 @@ import java.lang.annotation.RetentionPolicy;
 public @interface Authorize {
 }
 </code></pre><br/><p>C’est grâce à cette annotation qui a été définie que <strong>AuthorizationRequestFilter</strong>
-ne s’éxécutera que pour les méthodes annotées de <strong>@Authorize</strong>.</p><br/><p>Au sein de <strong>FilmResource</strong>, il nous reste donc à annoter les opérations d&#x27;écriture de notre API de gestion de films afin de
+ne s’exécutera que pour les méthodes annotées de <strong>@Authorize</strong>.</p><br/><p>Au sein de <strong>FilmResource</strong>, il nous reste donc à annoter les opérations d&#x27;écriture de notre API de gestion de films afin de
 les protéger par une autorisation JWT :</p><pre><code class="language-java">package be.vinci.api.filters;
 
 import jakarta.ws.rs.NameBinding;
@@ -828,7 +828,7 @@ public Film createOne(Film film, @Context ContainerRequest request) {
 }
 </code></pre><br/><p>C’est l’appel de <strong>getProperty</strong> sur un <strong>ContainerRequest</strong> qui permet de récupérer
 l’objet préparé lors du traitement d’autorisation JWT (fait dans le filtre).</p><br/><h1><a id="sectionG"></a>g) Envoi des requêtes à son API et JWT</h1><h2>g.1) Test de son API avec JWT</h2><p>Dans le cadre de ce cours, vous ne devez pas développer de frontend (par exemple en HTML /
-JavaScript / CSS) pour tester vos APIs. Cela prendrait trop de temps. </p><p>Nous utilisons donc des clients légers permettant de faire des requêtes à nos APIs.</p><p>Comme nous vous encourageons à utilser IntelliJ pour développer votre code Java, il est probablement
+JavaScript / CSS) pour tester vos APIs. Cela prendrait trop de temps. </p><p>Nous utilisons donc des clients légers permettant de faire des requêtes à nos APIs.</p><p>Comme nous vous encourageons à utiliser IntelliJ pour développer votre code Java, il est probablement
 plus aisé de rester au sein du même environnement de développement en utilisant le client HTTP
 d&#x27;IntelliJ.</p><br/><h2>g.2) HTTP Client d&#x27;IntelliJ avec des JWT</h2><p>IntelliJ permet d&#x27;ajouter des scripts associés aux réponses de cette façon :</p><pre><code class="language-text">GET host/api/test
 
@@ -1069,7 +1069,7 @@ Voici un exemple pour l&#x27;API de films :</li></ul><pre><code class="language-
 </code></pre><ul><li>Soit c’est simplement un tableau HTML (<code>&lt;table&gt;</code>).</li></ul><br/><p>Lors de l’implémentation de vos RESTful APIs, veuillez tester toutes les
 méthodes offertes par votre application JAX-RS à l’aide d&#x27;un client léger (HTTP client d&#x27;IntelliJ
 ou Rest Client de VS Code).</p><br/><p>Les ressources doivent persister au format JSON et vous devez échapper les caractères dangereux.</p><br/><p>Veuillez partir d&#x27;un archetype Maven comme décrit au point
-<a href="/baja/modules/1#sectionB">Module 1 : b) Creation d’une première application sur base d’un Archetype Maven</a>.</p><p>Veuillez intégrer à votre application les fichiers utiles de la démo
+<a href="/baja/modules/1#sectionB">Module 1 : b) Création d’une première application sur base d’un Archetype Maven</a>.</p><p>Veuillez intégrer à votre application les fichiers utiles de la démo
 <a href="https://github.com/e-vinci/baja-demos/tree/main/films-api">https://github.com/e-vinci/baja-demos/tree/main/films-api</a> présentée dans ce module-ci,
 principalement : <strong>pom.xml</strong>, <strong>Authorize</strong>, <strong>AuthorizationRequestFilter</strong>, <strong>Config</strong>, <strong>AuthsResource</strong>, <strong>UserDataService</strong></p><br/><p>Optionnel : vous souhaitez rapidement découvrir les principes d’une architecture
 Web associée à la JAMstack ? <a href="https://jamstack.wtf/">https://jamstack.wtf/</a> </p><br/><p>Optionnel : si vous souhaitez découvrir le format Markdown, notamment très souvent utilisé
