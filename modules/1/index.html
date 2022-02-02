@@ -152,17 +152,17 @@ sur <a href="http://localhost:8080/films">http://localhost:8080/films</a></p><br
 On ne peut donc pas effacer plus d&#x27;un élément.</p><br/><p><strong>Conclusion</strong> : </p><p>Par défaut, une nouvelle instance d’une Route Resource sera créée pour chaque requête matchant l’URI de la Root Resource.
 C’est comme si la Root Resource avait été annotée par <strong>@RequestScoped</strong>.
 Dans une application RESTful, cela n&#x27;a pas de sens car elle est &quot;stateless&quot;. Dès lors, comme la réponse à une requête
-ne dépend pas de l&#x27;état de la ressource, il est inutile de créer une nouvelle instance de ressource pour chaque requête.</p><br/><p>Si vous souhaitez plus de détails concernant le cycle de vie de Root Resources : <a href="https://eclipse-ee4j.github.io/jersey.github.io/documentation/latest3x/jaxrs-resources.html#d0e2470">https://eclipse-ee4j.github.io/jersey.github.io/documentation/latest3x/jaxrs-resources.html#d0e2470</a></p><br/><p>Avant de passer au point suivant, nous allons  remettre en ordre la fonction permettant de lire tous les films
+ne dépend pas de l&#x27;état de la ressource, il est inutile de créer une nouvelle instance de ressource pour chaque requête.</p><br/><p>Si vous souhaitez plus de détails concernant le cycle de vie de Root Resources : <a href="https://eclipse-ee4j.github.io/jersey.github.io/documentation/latest3x/jaxrs-resources.html#d0e2470">https://eclipse-ee4j.github.io/jersey.github.io/documentation/latest3x/jaxrs-resources.html#d0e2470</a></p><br/><h3>c.4.2) Scope : une instance par application JAX-RS</h3><p>Nous allons modifier le scope de la création en ajoutant l’annotation <strong>@Singleton</strong> dans <strong>FilmResource</strong> :</p><pre><code class="language-java" metastring="{1}">@Singleton
+@Path(&quot;films&quot;)
+public class FilmResource {
+</code></pre><br/><p>Suite à ce changement, vérifiez ce qui se produit au niveau de l&#x27;application.</p><p>On a bien une seule instance de <strong>FilmResource</strong> qui est injectée dans notre application.
+Dès lors, à chaque refresh de la page, un film est enlevé, jusqu&#x27;à ce que l&#x27;API renvoie comme JSON un tableau vide.</p><br/><p>Avant de passer au point suivant, nous allons  remettre en ordre la fonction permettant de lire tous les films
 (elle ne doit plus effacer de films).</p><pre><code class="language-java">@GET
 @Produces(MediaType.APPLICATION_JSON)
 public List&lt;Film&gt; getAll() {
     return films;
 }
-</code></pre><br/><h3>c.4.2) Scope : une instance par application JAX-RS</h3><p>Nous allons modifier le scope de la création en ajoutant l’annotation <strong>@Singleton</strong> dans <strong>FilmResource</strong> :</p><pre><code class="language-java" metastring="{1}">@Singleton
-@Path(&quot;films&quot;)
-public class FilmResource {
-</code></pre><br/><p>Suite à ce changement, vérifiez ce qui se produit au niveau de l&#x27;application.</p><p>On a bien une seule instance de <strong>FilmResource</strong> qui est injectée dans notre application.
-Dès lors, à chaque refresh de la page, un film est enlevé, jusqu&#x27;à ce que l&#x27;API renvoie comme JSON un tableau vide.</p><br/><h1><a id="sectionD"></a>d) Gestion des paramètres de requêtes</h1><h2>d.1) Paramètres d’URI via @Path et codes d&#x27;erreur</h2><p>Il est possible d’intégrer des variables dans des URIs.</p><p>Une variable est délimitée par des « <strong>{}</strong> » au sein de l’URI. </p><p>On utilise <strong>@PathParam</strong> pour extraire un paramètre du chemin d’une URI.</p><br/><p>Pour l&#x27;API de gestion de films, nous allons maintenant développer l&#x27;opération de lecture d&#x27;un
+</code></pre><br/><h1><a id="sectionD"></a>d) Gestion des paramètres de requêtes</h1><h2>d.1) Paramètres d’URI via @Path et codes d&#x27;erreur</h2><p>Il est possible d’intégrer des variables dans des URIs.</p><p>Une variable est délimitée par des « <strong>{}</strong> » au sein de l’URI. </p><p>On utilise <strong>@PathParam</strong> pour extraire un paramètre du chemin d’une URI.</p><br/><p>Pour l&#x27;API de gestion de films, nous allons maintenant développer l&#x27;opération de lecture d&#x27;un
 film sur base de son id.</p><p>Ajoutez cette nouvelle méthode au sein de <strong>FilmResource</strong> : </p><pre><code class="language-java" metastring="{1,3-4,7-8}">@GET
 @Path(&quot;/{id}&quot;)
 @Produces(MediaType.APPLICATION_JSON)
