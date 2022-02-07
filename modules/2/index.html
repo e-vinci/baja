@@ -1120,9 +1120,7 @@ un auteur ainsi qu’un statut de publication.</p><p>Le statut de publication d�
 que par son auteur.</p><br/><p>L’ajout ou la modification d’une page ne sera possible que si le statut de publication
 donné correspond à un des deux statuts actuels (« hidden ou « published »).
 Sinon un message d’erreur devra être renvoyé.</p><br/><p>La lecture d’une page, ou de toutes les pages, pourra être réalisée par n’importe
-quel utilisateur authentifié pour les pages dont le statut vaut « published ».</p><br/><p>Pour les pages dont le statut vaut « hidden », seul leur auteur authentifié pourra les lire.
-A la lecture d’une ou plusieurs page, on veillera à ce que les données associées
-à l’auteur d’une page ne contiennent pas le password.</p><br/><p>Lorsque vous renvoyer les données associées à une page, il est acceptable, à ce stade-ci,
+quel utilisateur authentifié pour les pages dont le statut vaut « published ».</p><br/><p>Pour les pages dont le statut vaut « hidden », seul leur auteur authentifié pourra les lire.</p><br/><p>Lorsque vous renvoyer les données associées à une page, il est acceptable, à ce stade-ci,
 d&#x27;inclure le password dans la réponse faite au client. </p><br/><p>Il est aussi acceptable à ce stade-ci, lorsque vous devez renvoyer une erreur à un client, de simplement
 renvoyer un code d&#x27;erreur (sans mettre de message dans le body de la réponse).</p><br/><p>Veuillez développer une application JAX-RS mettant à disposition les opérations
 décrites ci-dessus.</p><br/><p>Dans un premier temps, veuillez formaliser les opérations associées à vos RESTful
