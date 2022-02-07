@@ -297,8 +297,7 @@ Voici à quoi ressemble une variable <strong>baseUrl</strong> dans <strong>http-
 la requête permettant de lire tous les films :</li></ul><pre><code class="language-json">### Read All films
 GET {{baseUrl}}/films
 </code></pre><br/><p>Nous allons maintenant tester l&#x27;API de gestion de films que nous avons créée pour tout ce que nous
-ne pouvons pas tester directement via un browser.</p><br/><p>Au sein de VS Code, veuillez créer un fichier <strong>films.http</strong>.</p><p>Veuillez y ajouter cette requête pour la création d&#x27;un film et exécutez la requête : </p><pre><code class="language-json">@baseUrl = http://localhost:8080
-### Create One film
+ne pouvons pas tester directement via un browser.</p><br/><p>Au sein de VS Code, veuillez créer un fichier <strong>films.http</strong>.</p><p>Veuillez y ajouter cette requête pour la création d&#x27;un film et exécutez la requête : </p><pre><code class="language-json">### Create One film
 POST {{baseUrl}}/films 
 Content-Type: application/json
 
