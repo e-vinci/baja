@@ -665,7 +665,7 @@ Content-Type: application/json
 }
 
 ### Register john
-POST {{baseUrl}}/register
+POST {{baseUrl}}/auths/register
 Content-Type: application/json
 
 {
@@ -674,7 +674,7 @@ Content-Type: application/json
 }
 
 ### Login with John credentials
-POST {{baseUrl}}/login
+POST {{baseUrl}}/auths/login
 Content-Type: application/json
 
 {
@@ -1060,7 +1060,7 @@ ou d&#x27;un tableau en JSON (<strong>ArrayNode</strong>)</li><li><strong>Object
   &quot;login&quot;: &quot;james&quot;
 }
 </code></pre><br/><p>Dans la méthode <strong>login</strong> de la classe <strong>AuthsResource</strong>, voici le code permettant
-de renvoyer une représentation JSON de cet objet via un <strong>ObjectNode</strong> :</p><pre><code class="language-java" metastring="numbered {14,20}">public class UserDataService {
+de renvoyer une représentation JSON de cet objet via un <strong>ObjectNode</strong> :</p><pre><code class="language-java" metastring="numbered {3,8,18,24}">public class UserDataService {
     //...
     private final ObjectMapper jsonMapper = new ObjectMapper();
     //...
@@ -1140,7 +1140,7 @@ Voici un exemple pour l&#x27;API de films :</li></ul><pre><code class="language-
 méthodes offertes par votre application JAX-RS à l’aide d&#x27;un client léger (HTTP client d&#x27;IntelliJ
 ou Rest Client de VS Code).</p><br/><p>Les ressources doivent persister au format JSON et vous devez échapper les caractères dangereux.</p><br/><p>Veuillez partir d&#x27;un archetype Maven comme décrit au point
 <a href="/baja/modules/1#sectionB">Module 1 : b) Création d’une première application sur base d’un Archetype Maven</a>.</p><p>Veuillez intégrer à votre application les fichiers utiles de la démo
-<a href="https://github.com/e-vinci/baja-demos/tree/main/films-api">https://github.com/e-vinci/baja-demos/tree/main/films-api</a> présentée dans ce module-ci,
+<a href="https://github.com/e-vinci/baja-demos/tree/main/films-api-module2">https://github.com/e-vinci/baja-demos/tree/main/films-api-module2</a> présentée dans ce module-ci,
 principalement : <strong>pom.xml</strong>, <strong>Authorize</strong>, <strong>AuthorizationRequestFilter</strong>, <strong>Config</strong>, <strong>AuthsResource</strong>, <strong>UserDataService</strong></p><br/><p>Optionnel : vous souhaitez rapidement découvrir les principes d’une architecture
 Web associée à la JAMstack ? <a href="https://jamstack.wtf/">https://jamstack.wtf/</a> </p><br/><p>Optionnel : si vous souhaitez découvrir le format Markdown, notamment très souvent utilisé
 dans certains sites JAMstack (source des données pour certains Headless CMS) :
