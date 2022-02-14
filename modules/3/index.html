@@ -198,7 +198,7 @@ les services de données,  il est intéressant que les exceptions qui amènent �
 réponse au client soient traitées de manière centralisée plutôt que de gérer des
 <strong>try</strong> / <strong>catch</strong> un peu partout.</p><br/><p>On peut aussi souhaiter de centraliser certains traitement pour toutes les exceptions lancées,
 y-compris les <strong>WebApplicationException</strong> lancées dans les Root Resources.</p><p>La centralisation de ces traitements d&#x27;exception peut se faire au sein d&#x27;un <strong>ExceptionMapper</strong>.
-C&#x27;est un lieu idéal pour traiter de toutes les codes et messages d&#x27;erreur à envoyer aux client,
+C&#x27;est un lieu idéal pour traiter de tous les codes et messages d&#x27;erreur à envoyer aux client,
 pour créer des logs...</p><br/><p>Nous allons créer une <strong>ExceptionMapper</strong> nommé <strong>WebExceptionMapper</strong> dans le package <strong>utils</strong>
 qui doit attraper toutes les exceptions, afficher la stack trace, puis envoyer une réponse
 au client. Si de l&#x27;exception est de type <strong>WebApplicationException</strong>, on souhaite envoyer une réponse contenant le <strong>status</strong>
@@ -520,7 +520,10 @@ client.global.set(&quot;twigToken&quot;, response.body.token);
 ### Read All users
 GET {{baseUrl}}/users
 Authorization: {{twigToken}}
-</code></pre><br/>Veuillez exécuter ces 3 requêtes dans l&#x27;ordre. On voit que la dernière requête nous renvoie tant **age** que **married** alors qu&#x27;on souhaite les filtrer. De plus, les valeurs renvoyées sont les valeurs par défaut des attributs, même si on avait initialisés ceux-ci.<br/><p>Pour résoudre cela, dans un premier temps, nous allons filtrer lors de la sérialisation
+</code></pre><br/><p>Veuillez exécuter ces 3 requêtes dans l&#x27;ordre.
+On voit que la dernière requête nous renvoie tant <strong>age</strong> que <strong>married</strong> alors qu&#x27;on souhaite
+les filtrer. De plus, les valeurs renvoyées sont les valeurs par défaut des attributs, même si
+on avait initialisés ceux-ci.</p><br/><p>Pour résoudre cela, dans un premier temps, nous allons filtrer lors de la sérialisation
 tous les attributs qui ont une valeur par défaut.</p><p>Pour visualiser cela, veuillez mettre à jour <strong>UserImpl</strong>:</p><pre><code class="language-java" metastring="{1}">@JsonInclude(JsonInclude.Include.NON_DEFAULT) // ignore all default fields in order to avoid sending props not linked to a JSON view
 class UserImpl implements User {class UserImpl implements User {
    @JsonView(Views.Public.class)    
