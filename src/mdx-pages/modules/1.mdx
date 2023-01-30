@@ -312,20 +312,17 @@ Nous allons utiliser un package Jackson pour qu'automatiquement le framework pui
 JAVA, comme une ArrayList de films, vers du JSON.
 
 Pour ce faire, veuillez ajouter ajoutez une dépendance à Jackson :
-- Vous pouvez le faire en décommentant ce qui est proposé dans **/pom.xml** :
-```markup
-<!-- uncomment this to get JSON support:
-    <dependency>
-    <groupId>org.glassfish.jersey.media</groupId>
-    <artifactId>jersey-media-json-binding</artifactId>
-</dependency>
--->
-```
-- Sinon, via IntelliJ, pour ajouter une dépendance : 
+- Via IntelliJ, pour ajouter une dépendance : 
   - cliquez au sein de votre fichier **/pom.xml** : **Alt + Insert**, **Add dependency...**
   - tapez : **jersey-media-json-jackson**
   - Installez les dépendances Maven en cliquant sur le bouton représentant "**Load Maven Changes**"
-
+- Si vous n'avez pas IntelliJ, vous pouvez simplement rajouter cela dans votre **pom.xml** :
+```markup
+<dependency>
+    <groupId>org.glassfish.jersey.media</groupId>
+    <artifactId>jersey-media-json-jackson</artifactId>
+</dependency>
+```
 <br/>
 
 Voila, si vous exécutez votre programme, la lecture des films devrait fonctionner 
