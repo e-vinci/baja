@@ -129,13 +129,11 @@ et spécifiez que la représentation des ressources renvoyées par votre méthod
 </code></pre><br/><p>Une méthode annotée par <strong>@GET</strong> répondra aux requêtes <strong>GET</strong> sur la Root Resource.</p><p>Que se passe-t-il si vous tentez d&#x27;accéder à une ressource non prise en charge par votre API ?
 N&#x27;hésitez pas à essayer, par exemple : <a href="http://localhost:8080/movies">http://localhost:8080/movies</a>. </p><br/><p>Pour répondre à des requêtes d&#x27;une certaine méthode http, on utilisera l&#x27;annotation associée :
 par exemple, pour une requête POST, <strong>@POST</strong>…</p><br/><p>Testez la lecture des films...</p><p>Que se passe-t-il ? « Request failed »...</p><p>L&#x27;application n&#x27;est pas encore capable de sérialiser une ArrayList de films vers du JSON.</p><br/><h2><a id="sectionC3"></a>c.3) Sérialisation via Jackson</h2><p>Nous allons utiliser un package Jackson pour qu&#x27;automatiquement le framework puisse sérialiser des objets
-JAVA, comme une ArrayList de films, vers du JSON.</p><p>Pour ce faire, veuillez ajouter ajoutez une dépendance à Jackson :</p><ul><li>Vous pouvez le faire en décommentant ce qui est proposé dans <strong>/pom.xml</strong> :</li></ul><pre><code class="language-markup">&lt;!-- uncomment this to get JSON support:
-    &lt;dependency&gt;
+JAVA, comme une ArrayList de films, vers du JSON.</p><p>Pour ce faire, veuillez ajouter ajoutez une dépendance à Jackson :</p><ul><li>Via IntelliJ, pour ajouter une dépendance : <ul><li>cliquez au sein de votre fichier <strong>/pom.xml</strong> : <strong>Alt + Insert</strong>, <strong>Add dependency...</strong></li><li>tapez : <strong>jersey-media-json-jackson</strong></li><li>Installez les dépendances Maven en cliquant sur le bouton représentant &quot;<strong>Load Maven Changes</strong>&quot;</li></ul></li><li>Si vous n&#x27;avez pas IntelliJ, vous pouvez simplement rajouter cela dans votre <strong>pom.xml</strong> :</li></ul><pre><code class="language-markup">&lt;dependency&gt;
     &lt;groupId&gt;org.glassfish.jersey.media&lt;/groupId&gt;
-    &lt;artifactId&gt;jersey-media-json-binding&lt;/artifactId&gt;
+    &lt;artifactId&gt;jersey-media-json-jackson&lt;/artifactId&gt;
 &lt;/dependency&gt;
---&gt;
-</code></pre><ul><li>Sinon, via IntelliJ, pour ajouter une dépendance : <ul><li>cliquez au sein de votre fichier <strong>/pom.xml</strong> : <strong>Alt + Insert</strong>, <strong>Add dependency...</strong></li><li>tapez : <strong>jersey-media-json-jackson</strong></li><li>Installez les dépendances Maven en cliquant sur le bouton représentant &quot;<strong>Load Maven Changes</strong>&quot;</li></ul></li></ul><br/><p>Voila, si vous exécutez votre programme, la lecture des films devrait fonctionner
+</code></pre><br/><p>Voila, si vous exécutez votre programme, la lecture des films devrait fonctionner
 sur <a href="http://localhost:8080/films">http://localhost:8080/films</a></p><br/><p>NB : Pour cette version de Jersey, il n&#x27;est plus nécessaire d&#x27;enregistrer l&#x27;utilisation de Jackson au sein de l&#x27;application.
 Dans des versions plus ancienne, il fallait mettre à jour la classe <strong>Main</strong> :</p><pre><code class="language-java" metastring="{2}"> final ResourceConfig rc = new ResourceConfig().packages(&quot;be.vinci&quot;)
                 .register(JacksonFeature.class);
