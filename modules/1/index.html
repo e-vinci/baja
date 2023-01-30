@@ -503,7 +503,7 @@ potentiellement dangereux.</p><p>Nous utiliserons la librairie <strong>commons-t
 la méthode <strong>escapeHtml4</strong>. </p><br/><p>Dans le cadre de votre API de gestion de films, veuillez installer la dépendance <strong>commons-text</strong> :</p><ul><li>Via IntelliJ : <ul><li>cliquez au sein de votre fichier <strong>/pom.xml</strong> : <strong>Code</strong>, <strong>Generate...</strong>, <strong>Add dependency...</strong></li><li>tapez : <strong>commons-text</strong> et sélectionner <strong>org.apache.commons:commons-text</strong></li><li>Installez les dépendances Maven en cliquant sur le bouton représentant &quot;<strong>Load Maven Changes</strong>&quot;</li></ul></li><li>Si vous n&#x27;avez pas IntelliJ, ajoutez cela au sein de <strong>/pom.xml</strong>, puis forcer l&#x27;installation des dépendances :</li></ul><pre><code class="language-markup">&lt;dependency&gt;
             &lt;groupId&gt;org.apache.commons&lt;/groupId&gt;
             &lt;artifactId&gt;commons-text&lt;/artifactId&gt;
-            &lt;version&gt;1.10&lt;/version&gt;
+            &lt;version&gt;1.10.0&lt;/version&gt;
 &lt;/dependency&gt;
 </code></pre><br/><p>Mettez à jour <strong>FilmResource</strong> afin d&#x27;échapper les caractères dangereux lors des opérations d&#x27;écriture :</p><pre><code class="language-java" metastring="{10-11,31-32}">@POST
 @Produces(MediaType.APPLICATION_JSON)
