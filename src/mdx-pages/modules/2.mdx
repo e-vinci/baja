@@ -16,7 +16,7 @@ Voici les sujets traités :
 - f) [Autorisation JWT, filtres, providers & "Name binding"](/modules/2#sectionF)
 - g) [Envoi de requêtes à ses APIs](/modules/2#sectionG)
 - h) [Gestion des requêtes contenant des objets JSON quelconques](/modules/2#sectionH)
-- i) [Gestion des réponses et sérialisation d’objets JSON quelconques](/modules/2#sectionI)
+- i) [Gestion des réponses et sérialisation d'objets JSON quelconques](/modules/2#sectionI)
 - j) [Exercice 2.1](/modules/2#sectionJ)
 
 <br/>
@@ -38,7 +38,7 @@ aux opérations sur les données et la gestion des données.
 
 <br/>
 
-Pour ce faire, nous veuillez créer ces packages au sein de votre API gérant les films :
+Pour ce faire, veuillez créer ces packages au sein de votre API gérant les films :
 - **api** : s'occupera des Root Resources et donc de la présentation des ressources aux clients.
 - **domain** : inclura tous les objets du domaines, les sacs de données.
 - **main** : gère le démarrage de l'application JAX-RS.
@@ -129,8 +129,7 @@ public class FilmDataService {
 
 Dans le **Main**, faites en sorte de découvrir les ressources que dans le package **api** :
 ```java {1}
-final ResourceConfig rc = new ResourceConfig().packages("be.vinci.api")
-                .register(JacksonFeature.class);
+final ResourceConfig rc = new ResourceConfig().packages("be.vinci.api");
 ```
 <br/>
 
@@ -208,21 +207,39 @@ que précédemment.
 <br/>
 
 ## a.2) Création d'un utilitaire utile pour tous les services de données
-Nous allons maintenant généraliser la classe **Json** afin qu'elle puisse être utilisée avec 
-n'importe quel service de données (pour n'importe quel type de ressources : 
-des films, des textes...).
+La classe **Json** actuellement ne parse que des données vers le type **Film**.
+
+Or on souhaiterait pouvoir charger n'importe quelle collection de données (pour n'importe quel type de ressources : des films, des textes...) et écrire cela pour retourner une **`List<T>`** (une liste paramétrée vers le type passé à la classe générique **Json**) :
+```java
+return jsonMapper.readerForListOf(type).readValue(collection);
+```
 <br/>
 
-Veuillez créer le package **utils** au sein du package **services**.
-Nous allons maintenant rendre générique la classe **Json** afin de la paramétrer sur base du type 
-associé aux ressources.
-Voici le code mis à jour de la classe **Json** : 
-```java
+On aimerait donc faire en sorte que **type**, dans le code donné ci-dessus, valent le type
+passé à une classe générique. Ca serait en fait le type **T** passé à la classe **`Json<T>`**. La difficulté pour y arriver, c'est que les "generics" en Java 
+sont principalement déterminés à la compilation. Cela signifie que l'information est perdue à 
+l'exécution (le type paramétré **T** est un **Object**). 
+Pour obtenir l'information associé au type passé à la classe générique, lors de l'exécution,
+il faut ajouter un argument à une fonction.
+
+Ici, on a choisi d'ajouter le type au constructeur.
+
+Veuillez créer le package **utils** au sein du package **services**.  
+Voici le code mis à jour de la classe **Json** pour la rendre générique afin de la paramétrer sur base du type associé aux ressources : 
+```java numbered {1,6,10-12,15,41,49,51,53,56}
 public class Json<T> {
-    private static final String DB_FILE_PATH = "db.json";
+
+    private static final String DB_FILE_PATH = Config.getProperty("DatabaseFilePath");
     private static Path pathToDb = Paths.get(DB_FILE_PATH);
     private final static ObjectMapper jsonMapper = new ObjectMapper();
-    private T type;
+    private Class<T> type ;
+
+    // Java generics are mostly compile time, this means that the type information is lost at runtime.
+    // To get the type information at runtime you have to add it as an argument of the constructor.
+    public Json(Class<T> type){
+        this.type = type;
+    }
+
 
     public void serialize(List<T> items, String collectionName) {
         try {
@@ -260,7 +277,7 @@ public class Json<T> {
             if (collection == null) // Send an empty list if there is not the requested collection
                 return (List<T>) new ArrayList<T>();
             // convert the JsonNode to a List of POJOs & return it
-            return jsonMapper.readerForListOf(Film.class).readValue(collection);
+            return jsonMapper.readerForListOf(type).readValue(collection);
         } catch (FileNotFoundException e) {
             return (List<T>) new ArrayList<T>(); // send an empty list if there is no db file
         } catch (IOException e) {
@@ -275,70 +292,72 @@ public class Json<T> {
 
 Il faut aussi mettre à jour **FilmDataService** afin de paramétrer l'appel aux méthodes de la 
 classe **Json** :
-```java
+```java numbered {3-4,8,20,26,31,37,40,45,52,57}
 public class FilmDataService {
-    private static final String COLLECTION_NAME = "films";
-    private static Json<Film> jsonDB = new Json<>();
+
+  private static final String COLLECTION_NAME = "films";
+  private static Json<Film> jsonDB = new Json<>(Film.class);
 
 
-    public List<Film> getAll(int minimumDuration) {
-        var films = jsonDB.parse(COLLECTION_NAME);
-        if (minimumDuration != -1) {
-            List<Film> filmsFiltered = films.stream().filter(film -> film.getDuration() >= minimumDuration)
-                    .toList();
-            return filmsFiltered;
-        }
-        return films;
+  public List<Film> getAll(int minimumDuration) {
+    var films = jsonDB.parse(COLLECTION_NAME);
+    if (minimumDuration != -1) {
+      List<Film> filmsFiltered = films.stream()
+          .filter(film -> film.getDuration() >= minimumDuration)
+          .toList();
+      return filmsFiltered;
     }
+    return films;
+  }
 
 
-    public Film getOne(int id) {
-        var films = jsonDB.parse(COLLECTION_NAME);
-        Film filmFound = films.stream().filter(film -> film.getId() == id).findAny().orElse(null);
-        return filmFound;
-    }
+  public Film getOne(int id) {
+    var films = jsonDB.parse(COLLECTION_NAME);
+    Film filmFound = films.stream().filter(film -> film.getId() == id).findAny().orElse(null);
+    return filmFound;
+  }
 
-    public Film createOne(Film film) {
-        var films = jsonDB.parse(COLLECTION_NAME);
-        film.setId(nextFilmId());
-        film.setTitle(StringEscapeUtils.escapeHtml4(film.getTitle()));
-        film.setLink(StringEscapeUtils.escapeHtml4(film.getLink()));
-        films.add(film);
-        jsonDB.serialize(films, COLLECTION_NAME);
-        return film;
-    }
+  public Film createOne(Film film) {
+    var films = jsonDB.parse(COLLECTION_NAME);
+    film.setId(nextFilmId());
+    film.setTitle(StringEscapeUtils.escapeHtml4(film.getTitle()));
+    film.setLink(StringEscapeUtils.escapeHtml4(film.getLink()));
+    films.add(film);
+    jsonDB.serialize(films, COLLECTION_NAME);
+    return film;
+  }
 
 
-    public Film deleteOne(int id) {
-        var films = jsonDB.parse(COLLECTION_NAME);
-        Film filmToDelete = films.stream().filter(film -> film.getId() == id).findAny().orElse(null);
-        films.remove(filmToDelete);
-        jsonDB.serialize(films, COLLECTION_NAME);
-        return filmToDelete;
-    }
+  public Film deleteOne(int id) {
+    var films = jsonDB.parse(COLLECTION_NAME);
+    Film filmToDelete = films.stream().filter(film -> film.getId() == id).findAny().orElse(null);
+    films.remove(filmToDelete);
+    jsonDB.serialize(films, COLLECTION_NAME);
+    return filmToDelete;
+  }
 
-    public Film updateOne(Film film, int id) {
-        var films = jsonDB.parse(COLLECTION_NAME);
-        Film filmToUpdate = films.stream().filter(f -> f.getId() == id).findAny().orElse(null);
-        film.setId(id);
-        film.setTitle(StringEscapeUtils.escapeHtml4(film.getTitle()));
-        film.setLink(StringEscapeUtils.escapeHtml4(film.getLink()));
-        films.remove(film); // thanks to equals(), films is found via its id
-        films.add(film);
-        jsonDB.serialize(films, COLLECTION_NAME);
-        return film;
-    }
+  public Film updateOne(Film film, int id) {
+    var films = jsonDB.parse(COLLECTION_NAME);
+    Film filmToUpdate = films.stream().filter(f -> f.getId() == id).findAny().orElse(null);
+    film.setId(id);
+    film.setTitle(StringEscapeUtils.escapeHtml4(film.getTitle()));
+    film.setLink(StringEscapeUtils.escapeHtml4(film.getLink()));
+    films.remove(film); // thanks to equals(), films is found via its id
+    films.add(film);
+    jsonDB.serialize(films, COLLECTION_NAME);
+    return film;
+  }
 
-    public int nextFilmId() {
-        var films = jsonDB.parse(COLLECTION_NAME);
-        if (films.size() == 0)
-            return 1;
-        return films.get(films.size() - 1).getId() + 1;
-    }
+  public int nextFilmId() {
+    var films = jsonDB.parse(COLLECTION_NAME);
+      if (films.size() == 0) {
+          return 1;
+      }
+    return films.get(films.size() - 1).getId() + 1;
+  }
 }
 ```
 <br/>
-
 
 Veuillez exécuter et tester votre application JAX-RS pour vous assurer que celle-ci est bien 
 fonctionnelle.
@@ -392,12 +411,12 @@ public class Config {
 ```
 <br/>
 
-Cette classe **Config** permet de charger toutes les paramètres de configuration de l’application.
+Cette classe **Config** permet de charger toutes les paramètres de configuration de l'application.
 <br/>
 
 Les paramètres de configuration de l'application, ou propriétés, sont à ajouter manuellement 
 dans un fichier **.properties**. Ce fichier contient des propriétés sous forme de **key=value**, 
-comme par exemple l’URL du serveur intégré à l’application JAX-RS.
+comme par exemple l'URL du serveur intégré à l'application JAX-RS.
 
 Veuillez ajouter le fichier **dev.properties** à la racine de votre projet :
 ```
@@ -425,7 +444,7 @@ public class Main {
 ```
 <br/>
 
-L’utilisation d’une propriété, comme par exemple l’URL du serveur intégré à l’application JAX-RS,
+L'utilisation d'une propriété, comme par exemple l'URL du serveur intégré à l'application JAX-RS,
 se fait via l'appel de **getProperty** de **Config** (ou **getIntProperty** ou **getBoolProperty**). 
 
 Veuillez mettre à jour la classe **Main** :
@@ -469,7 +488,7 @@ des films :
 ##### Tableau 1 : opérations sur les ressources de type "Authentification"
 | URI | Méthode HTTP | Auths? | Opération |
 |---|---|---|---|
-| **auths/login** | POST | Non | Vérifier les « credentials » d’un User et renvoyer le User et un token JWT s’ils sont OK |
+| **auths/login** | POST | Non | Vérifier les « credentials » d'un User et renvoyer le User et un token JWT s'ils sont OK |
 | **auths/register** | POST | Non | Créer une ressource User et un token JWT et les renvoyer |
 
 <br/>
@@ -488,20 +507,20 @@ des films :
 
 ## c.2) JWT authentification et autorisation : concepts généraux
 Les JWT sont parfaits pour la création de RESTful APIs, car ils permettent de mettre en place 
-un mécanisme d’authentification et autorisation « stateless » pour le backend.
+un mécanisme d'authentification et autorisation « stateless » pour le backend.
 <br/>
 
-Le client va s’authentifier et donc obtenir un JWT généré par l’API lors de son enregistrement 
+Le client va s'authentifier et donc obtenir un JWT généré par l'API lors de son enregistrement 
 (**auths/register**) ou lors de son login (**auths/login**).
 
-Le JWT généré par l’API contient 3 parties :
--	Un header : il est encodé en base64 indiquant l’algorithme de la signature du token.
--	Un payload : il est encodé en base64, il contient généralement des données permettant 
-d’identifier l’utilisateur faisant la requête. Ces données ne sont pas secrètes 
-(le payload n’est pas crypté !)
--	Une signature : elle est hachée selon l’algorithme spécifié dans le header. 
-La signature permet de vérifier que le token n’a pas été modifié, et donc, 
-de mettre en place un mécanisme d’autorisation d’accès aux opérations d’une API.
+Le JWT généré par l'API contient 3 parties :
+-	Un **header** : il est encodé en base64 indiquant l'algorithme de la signature du token.
+-	Un **payload** : il est encodé en base64, il contient généralement des données permettant 
+d'identifier l'utilisateur faisant la requête. Ces données ne sont pas secrètes 
+(le payload n'est pas crypté !)
+-	Une **signature** : elle est hachée selon l'algorithme spécifié dans le header. 
+La signature permet de vérifier que le token n'a pas été modifié, et donc, 
+de mettre en place un mécanisme d'autorisation d'accès aux opérations d'une API.
 
 <br/>
 
@@ -514,12 +533,12 @@ Typiquement, le JWT reçu par un client est enregistré dans le Web Storage de s
 
 # <a id="sectionD"></a>d) Authentification et création de token JWT
 ## d.1) Ajout de la dépendance java-jwt
-Tant pour la création que la vérification d’un token, nous utiliserons la librairie java-jwt :
+Tant pour la création que la vérification d'un token, nous utiliserons la librairie java-jwt :
 https://github.com/auth0/java-jwt
 
 Pour utiliser cette librairie, ajoutez une dépendance à **java-jwt** :
 - Via IntelliJ : 
-  - cliquez au sein de votre fichier **pom.xml** : **Code**, **Generate...**, **Dependency**
+  - cliquez au sein de votre fichier **pom.xml** : **Code**, **Generate...**, **Add dependency...**
   - tapez : **java-jwt**
   - Installez les dépendances Maven en cliquant sur le bouton représentant "**Load Maven Changes**"
   - NB : si IntelliJ ne trouve pas votre dépendance, et que le numéro de version est mis en rouge
@@ -530,7 +549,7 @@ Pour utiliser cette librairie, ajoutez une dépendance à **java-jwt** :
 <dependency>
             <groupId>com.auth0</groupId>
             <artifactId>java-jwt</artifactId>
-            <version>3.18.2</version>
+            <version>4.2.2</version>
 </dependency>
 ```
 <br/>
@@ -551,7 +570,7 @@ le monde JSON.
 utilisateurs et qui va offrir les services d'accès aux données et la logique pour le **login** 
 et le **register**.
 - Création d'une Root Resource **AuthsResource** qui va s'occuper de gérer la présentation des 
-ressources aux clients.
+ressources (login & register) aux clients.
 - Amélioration de la classe **Json** qui s'occupe de la persistance des données afin que l'on 
 puisse parser n'importe quelle collection de données. 
 - Test des opérations de **login** et **register**.
@@ -640,7 +659,7 @@ import java.util.List;
 
 public class UserDataService {
     private static final String COLLECTION_NAME = "users";
-    private static Json<User> jsonDB = new Json<>();
+    private static Json<User> jsonDB = new Json<>(User.class);
     private final Algorithm jwtAlgorithm = Algorithm.HMAC256(Config.getProperty("JWTSecret"));
     private final ObjectMapper jsonMapper = new ObjectMapper();
 
@@ -808,114 +827,11 @@ public class AuthsResource {
 ```
 <br/>
 
-Le service de données s'occupant des utilisateurs fournit, lors du login et du register, 
-un **ObjectNode** qui contient l'id, le login et le token d'un utilisateur. 
+Le service de données s'occupant des utilisateurs fournit, lors du login et du register, un **ObjectNode** qui contient l'id, le login et le token d'un utilisateur. 
 
 <br/>
 
-### d.2.5) Amélioration de la classe générique Json
-La classe **Json** actuellement ne parse que des données vers le type **Film**.
-
-Or on souhaiterait pouvoir charger n'importe quelle collection de données et écrire cela pour 
-retourner une `List<T>` (une liste paramétrée vers le type passé à la classe générique **Json**) :
-```java
-return jsonMapper.readerForListOf(type).readValue(collection);
-```
-<br/>
-
-On aimerait donc faire en sorte que **type**, dans le code donné ci-dessus, valent le type
-passé à la classe générique. La difficulté pour y arriver, c'est que les "generics" en Java 
-sont principalement déterminés à la compilation. Cela signifie que l'information est perdue à 
-l'exécution (le type paramétré **T** un **Object**). 
-Pour obtenir l'information associé au type passé à la classe générique, lors de l'exécution,
-il faut ajouter un argument à une fonction.
-
-Ici, on a choisi d'ajouter le type au constructor.
-Voici donc les mises à jour de la classe **Json** en surligné : 
-```java numbered {5-11,50}
-public class Json<T> {
-    private static final String DB_FILE_PATH = Config.getProperty("DatabaseFilePath");
-    private static Path pathToDb = Paths.get(DB_FILE_PATH);
-    private final static ObjectMapper jsonMapper = new ObjectMapper();
-    private Class<T> type ;
-
-    // Java generics are mostly compile time, this means that the type information is lost at runtime.
-    // To get the type information at runtime you have to add it as an argument of the constructor.
-    public Json(Class<T> type){
-        this.type = type;
-    }
-
-
-    public void serialize(List<T> items, String collectionName) {
-        try {
-            // if no DB file, write a new collection to a new db file
-            if (!Files.exists(pathToDb)) {
-                // Create an object and add a JSON array as POJO, e.g. { items:[...]}
-                ObjectNode newCollection = jsonMapper.createObjectNode().putPOJO(collectionName, items);
-                jsonMapper.writeValue(pathToDb.toFile(), newCollection); // write the JSON Object in the DB file
-                return;
-            }
-            // get all collections : can be read as generic JsonNode, if it can be Object or Array;
-            JsonNode allCollections = jsonMapper.readTree(pathToDb.toFile()); // e.g. { users:[...], items:[...]}
-            // remove current collection, e.g. remove the array of items
-            if (allCollections.has(collectionName)) {
-                ((ObjectNode) allCollections).remove(collectionName); //e.g. it leaves { users:[...]}
-            }
-            // Prepare a JSON array from the list of POJOs for the collection to be updated, e.g. [{"film1",...}, ...]
-            ArrayNode updatedCollection = jsonMapper.valueToTree(items);
-            // Add the JSON array in allCollections, e.g. : { users:[...], items:[...]}
-            ((ObjectNode) allCollections).putArray(collectionName).addAll(updatedCollection);
-            // write to the db file allCollections
-            jsonMapper.writeValue(pathToDb.toFile(), allCollections);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public List<T> parse(String collectionName) {
-        try {
-            // get allCollections
-            JsonNode node = jsonMapper.readTree(pathToDb.toFile());
-            // accessing value of the specified field of an object node,
-            // e.g. the JSON array within "items" field of { users:[...], items:[...]}
-            JsonNode collection = node.get(collectionName);
-            if (collection == null) // Send an empty list if there is not the requested collection
-                return (List<T>) new ArrayList<T>();
-            // convert the JsonNode to a List of POJOs & return it
-            return jsonMapper.readerForListOf(type).readValue(collection);
-        } catch (FileNotFoundException e) {
-            return (List<T>) new ArrayList<T>(); // send an empty list if there is no db file
-        } catch (IOException e) {
-            e.printStackTrace();
-            return (List<T>) new ArrayList<T>();
-        }
-    }
-
-}
-
-```
-<br/>
-
-Il ne reste plus qu'à modifier la création des instances de la classe **Json** pour passer 
-l'information du type à l'exécution.
-
-Veuillez mettre à jour cette ligne de **FilmDataService** :
-```java {3}
-public class FilmDataService {
-    private static final String COLLECTION_NAME = "films";
-    private static Json<Film> jsonDB = new Json<>(Film.class);
-```
-<br/>
-
-Veuillez aussi mettre à jour cette ligne de **UserDataService** :
-```java {3}
-public class UserDataService {
-    private static final String COLLECTION_NAME = "users";
-    private static Json<User> jsonDB = new Json<>(User.class);
-```
-<br/>
-
-### d.2.6) Test des opérations de login et de register
+### d.2.5) Test des opérations de login et de register
 Veuillez tester les deux nouvelles opérations ajoutées.
 Pour ce faire, à l'aide d'InteliJ, ajoutez le fichier **users.http** à votre module ou 
 projet (dans le répertoire **requests** par exemple) avec ces requêtes :
@@ -958,11 +874,9 @@ Content-Type: application/json
 ```
 <br/>
 
-Il ne vous reste plus qu'à exécuter votre RESTful API et exécuter les requêtes pour voir que 
-l'API vous renvoie bien des tokens.
+Il ne vous reste plus qu'à exécuter votre RESTful API et exécuter les requêtes pour voir que l'API vous renvoie bien des tokens.
 
-Si vous n'utilisez pas IntelliJ, mais plutôt VS Code, il suffit juste de rajouter la variable 
-**baseUrl** à votre script **auths.http**.
+Si vous n'utilisez pas IntelliJ, mais plutôt VS Code, il suffit juste de rajouter la variable **baseUrl** à votre script **auths.http**.
 <br/>
 
 # <a id="sectionE"></a>e) Utilisation de jbcrypt pour gérer les passwords
@@ -971,7 +885,7 @@ https://www.mindrot.org/projects/jBCrypt/
 
 Pour utiliser cette librairie, ajoutez une dépendance à **jbcrypt** :
 - Via IntelliJ : 
-  - cliquez au sein de votre fichier **pom.xml** : **Code**, **Generate...**, **Dependency**
+  - cliquez au sein de votre fichier **pom.xml** : **Code** (ou clic droit dans **pom.xml**), **Generate...**, **Add dependency...**
   - tapez : **jbcrypt**
   - Installez les dépendances Maven en cliquant sur le bouton représentant "**Load Maven Changes**"
   - NB : si IntelliJ ne trouve pas votre dépendance, et que le numéro de version est mis en rouge
@@ -987,8 +901,7 @@ Pour utiliser cette librairie, ajoutez une dépendance à **jbcrypt** :
 ```
 <br/>
 
-Nous allons mettre à jour la classe **User** afin d'offrir la fonction **hashPassword** et
-mettre à jour la fonction **checkPassword** : 
+Nous allons mettre à jour la classe **User** afin d'offrir la fonction **hashPassword** et mettre à jour la fonction **checkPassword** : 
 ```java
 public boolean checkPassword(String password) {
     return BCrypt.checkpw(password, this.password);
@@ -1000,7 +913,7 @@ public String hashPassword(String password) {
 ```
 <br/>
 
-Attention, maintenant que nous utilisons les passwords hachés, il faut supprimer l'ancienne base 
+⚡ Attention, maintenant que nous utilisons les passwords hachés, il faut supprimer l'ancienne base 
 de donnée des utilisateurs. Vous devez soit effacer la collection **users** du fichier **db.json**,
 soit vous pouvez aussi directement effacer le fichier **db.json**.
 <br/>
@@ -1020,7 +933,7 @@ public ObjectNode register(String login, String password) {
 
 # <a id="sectionF"></a>f) Autorisation JWT, filtres, providers & "Name binding"
 ## f.1) Vérification d'un token : concepts généraux
-La vérification d’un token n’est nécessaire que pour les opérations sur les ressources 
+La vérification d'un token n'est nécessaire que pour les opérations sur les ressources 
 qui doivent être protégées (ou autorisées).
 
 Le code générique pour vérifier un token est donné ici :
@@ -1031,23 +944,23 @@ Il serait peu intéressant de devoir réimplémenter ce code pour chaque opérat
 une autorisation JWT.
 <br/>
 
-Ce que nous souhaitons, c’est :
-- Pouvoir annoter chaque méthode d’une Root Resource devant être autorisée par JWT : 
-nous choisissons l’annotation **@Authorize** pour notre API de gestion de films ;
-- Appeler le morceau de code s’occupant de vérifier un JWT pour chaque méthode annotée de **@Authorize** :
+Ce que nous souhaitons, c'est :
+- Pouvoir annoter chaque méthode d'une Root Resource devant être autorisée par JWT : 
+nous choisissons l'annotation **@Authorize** pour notre API de gestion de films ;
+- Appeler le morceau de code s'occupant de vérifier un JWT pour chaque méthode annotée de **@Authorize** :
     - si le JWT reçu au sein du header de la requête est OK, nous nous occupons de charger 
-    l’utilisateur ayant fait la requête dans un container associé à la requête du client, 
+    l'utilisateur ayant fait la requête dans un container associé à la requête du client, 
     via la clé "user" ; ensuite, le code de la méthode annotée par **@Authorize** est exécuté ;
-    - si le JWT reçu au sein du header n’est pas vérifié avec succès, nous envoyons un code 
-    d’erreur au client ; le code de la méthode annotée par **@Authorize** ne sera donc pas exécuté.
+    - si le JWT reçu au sein du header n'est pas vérifié avec succès, nous envoyons un code 
+    d'erreur au client ; le code de la méthode annotée par **@Authorize** ne sera donc pas exécuté.
 
 <br/>
 
-NB : Pour certains d'entre vous, cela pourrait vous rappellera la création et l’utilisation 
-d’un middleware « authorize » dans le monde de Node.js / Express.
+NB : Pour certains d'entre vous, cela pourrait vous rappellera la création et l'utilisation 
+d'un middleware « authorize » dans le monde de Node.js / Express.
 <br/>
 
-Au sein d’une application JAX-RS, les filtres « serveurs » permettent de modifier 
+Au sein d'une application JAX-RS, les filtres « serveurs » permettent de modifier 
 les requêtes ou les réponses, soit pour toutes les requêtes, soit pour seulement certaines 
 méthodes… 
 
@@ -1057,7 +970,7 @@ les méthodes contenant une annotation personnelle, **@Authorize** dans la démo
 
 ## f.2) Filtres, providers & « Name binding »
 Il est possible de créer toutes sortes de filtres pour modifier soit les requêtes,
-soit les réponses d’une application JAX-RS. 
+soit les réponses d'une application JAX-RS. 
 <br/>
 
 Si vous souhaitez des détails en plus du résumé présenté par la suite, les filtres sont expliqués dans le manuel de Jersey : 
@@ -1065,11 +978,11 @@ https://eclipse-ee4j.github.io/jersey.github.io/documentation/latest3x/filters-a
 <br/>
 
 Les filtres « serveurs » sont illustré au sein de cette section via la mise en place 
-d’un filtre de requêtes permettant principalement de filtrer toutes les requêtes qui 
-ne seraient pas autorisées (lorsque le JWT reçu n’est pas valide).
+d'un filtre de requêtes permettant principalement de filtrer toutes les requêtes qui 
+ne seraient pas autorisées (lorsque le JWT reçu n'est pas valide).
 <br/>
 
-Afin d’exécuter le traitement d’autorisation JWT pour chaque méthode annotée de **@Authorize**, 
+Afin d'exécuter le traitement d'autorisation JWT pour chaque méthode annotée de **@Authorize**, 
 nous allons utiliser un objet de type « filtre de requête » qui hérite de **ContainerRequestFilter**.
 <br/>
 
@@ -1123,8 +1036,7 @@ public class AuthorizationRequestFilter implements ContainerRequestFilter {
                         .entity("You are forbidden to access this resource").build());
             }
 
-            requestContext.setProperty("user",
-                    myUserDataService.getOne(decodedToken.getClaim("user").asInt()));
+            requestContext.setProperty("user", authenticatedUser);
         }
     }
 
@@ -1133,32 +1045,33 @@ public class AuthorizationRequestFilter implements ContainerRequestFilter {
 <br/>
 
 **AuthorizationRequestFilter** va vérifier le JWT : 
-- S’il n’est pas OK, la requête est « avortée » en appelant **abortWith** et en 
-fournissant le code d’erreur ainsi qu’un message d’erreur au client. 
+- S'il n'est pas OK, la requête est « avortée » en appelant **abortWith** et en 
+fournissant le code d'erreur ainsi qu'un message d'erreur au client. 
 - Si le JWT est OK, le claim "user" mis dans le payload du JWT, 
-qui en fait est l’id de l’utilisateur, est utilisé pour ajouter l’utilisateur à la requête 
+qui en fait est l'id de l'utilisateur, est utilisé pour ajouter l'utilisateur à la requête 
 ( l'utilisateur est récupéré en faisant appel à la méthode **getOne** du service des données 
-des utilisateurs) sous la clé **user**. 
-Ensuite, la méthode de la ressource annotée par **@Authorize** est exécutée, 
-afin de préparer la réponse au client.
+des utilisateurs) sous la clé **user**.  
+Ensuite, la méthode de la ressource annotée par **@Authorize** est exécutée, afin de préparer la réponse au client.
+
 <br/>
 
-La notion de provider est définie dans la spécification de JAX-RS : 
-https://jakarta.ee/specifications/restful-ws/3.0/jakarta-restful-ws-spec-3.0.html#providers 
+La notion de **provider** est définie dans la spécification de JAX-RS : 
+https://jakarta.ee/specifications/restful-ws/3.0/jakarta-restful-ws-spec-3.0.html#providers. 
+
 <br/>
 
-En résumé, un provider permet de filtrer les requêtes, convertir des représentations 
+En résumé, un **provider** permet de filtrer les requêtes, convertir des représentations 
 (XML, JSON…) vers des objets Java, mapper des exceptions à des réponses… 
 
 Il existe de nombreux providers prédéfinis qui sont fournis dans Jersey. 
 
-L’annotation **@Provider** permet de fournir notre propre implémentation d’un provider, 
-de la rendre disponible à l’exécution à notre application JAX-RS.
+L'annotation **@Provider** permet de fournir notre propre implémentation d'un provider, 
+de la rendre disponible à l'exécution à notre application JAX-RS.
 <br/>
 
-Un filtre peut être lié à un nom, ce que l’on appelle « **Name binding** ». 
+Un filtre peut être lié à un nom, ce que l'on appelle « **Name binding** ». 
 
-A l’exécution d’une application JAX-RS, on pourra spécifier que le filtre sera exécuté 
+A l'exécution d'une application JAX-RS, on pourra spécifier que le filtre sera exécuté 
 seulement pour certaines méthodes.
 
 NB : les filtres peuvent ne pas être limités, on les appelle alors filtre globaux.
@@ -1182,8 +1095,8 @@ public @interface Authorize {
 ```
 <br/>
 
-C’est grâce à cette annotation qui a été définie que **AuthorizationRequestFilter** 
-ne s’exécutera que pour les méthodes annotées de **@Authorize**.
+C'est grâce à cette annotation qui a été définie que **AuthorizationRequestFilter** 
+ne s'exécutera que pour les méthodes annotées de **@Authorize**.
 <br/>
 
 Au sein de **FilmResource**, il nous reste donc à annoter les opérations d'écriture de notre API de gestion de films afin de 
@@ -1276,7 +1189,7 @@ public class FilmResource {
 <br/>
 
 
-Comment peut-on récupérer l’objet **user** mis dans la requête par le 
+Comment peut-on récupérer l'objet **user** mis dans la requête par le 
 **AuthorizationRequestFilter** ?
 <br/>
 
@@ -1297,8 +1210,12 @@ public Film createOne(Film film, @Context ContainerRequest request) {
 ```
 <br/>
 
-C’est l’appel de **getProperty** sur un **ContainerRequest** qui permet de récupérer 
-l’objet préparé lors du traitement d’autorisation JWT (fait dans le filtre).
+C'est l'appel de **getProperty** sur un **ContainerRequest** qui permet de récupérer 
+l'objet préparé lors du traitement d'autorisation JWT (fait dans le filtre).
+<br/>
+
+💭  Pourquoi ajouter de l'information au sein d'une requête ?  
+Imaginez faire un appel à une base de donnée lorsque vous voulez vérifier qu'un utilisateur est bien authentifié, grâce à votre filtre. Une fois le code du filtre exécuté, vous aller réaliser l'opération demandée par le client. Il se peut que cette opération nécessite les données de l'utilisateur authentifié. Allez vous à nouveau faire un appel à la base de données ? Hé bien non, vous économisez cet appel à la base de données car les données de l'utilisateur authentifié sont disponibles dans le contexte de la requête.
 <br/>
 
 # <a id="sectionG"></a>g) Envoi des requêtes à son API et JWT
@@ -1404,10 +1321,11 @@ https://www.jetbrains.com/help/idea/http-client-in-product-code-editor.html#usin
 ## g.3) REST Client sous VS Code & JWT
 Quelques notions pour utiliser REST Client avec des JWT :
 - Il est possible de créer des « **Request Variables** » afin de récupérer la réponse associée 
-à une requête au sein d’une variable.
-- On va donc pouvoir récupérer le token, suite à une requête d’authentification, 
-au sein d’une « **Request Variable** », pour ensuite fournir ce token dans le 
+à une requête au sein d'une variable.
+- On va donc pouvoir récupérer le token, suite à une requête d'authentification, 
+au sein d'une « **Request Variable** », pour ensuite fournir ce token dans le 
 « **Authorization header** » de toutes les requêtes demandant une autorisation JWT.
+
 <br/>
 
 Voici le script permettant de tester les opérations sur les films :
@@ -1469,7 +1387,7 @@ https://github.com/Huachao/vscode-restclient
 Dans le cadre du module 1, nous avons vu les moyens principaux de gérer des requêtes. 
 
 Pour ce module-ci, nous avons été en contact avec du code permettant :
-- de récupérer des informations JSON du body d’une requête sans passer par un POJO, 
+- de récupérer des informations JSON du body d'une requête sans passer par un POJO, 
 mais en utilisant un **JsonNode**. 
 - de retrouver le contexte d'une requête.
 <br/>
@@ -1478,15 +1396,14 @@ Nous allons maintenant expliquer les concepts associés.
 <br/>
 
 ## h.2) Récupération des paramètres d'une requête d'un objet quelconque
-Nous allons souvent souhaiter récupérer des données qui ont été envoyées au format 
-JSON sein du body d’une requête client.
+Nous allons souvent souhaiter récupérer des données qui ont été envoyées au format JSON au sein du body d'une requête client.
 <br/>
 
 Dans le cas où ces données ne correspondent pas à un POJO, nous pouvons utiliser 
 un paramètre de type **JsonNode**, et récupérer les champs JSON via la méthode **get**.
 <br/>
 
-Admettons qu’une requête cliente envoie ce JSON : 
+Admettons qu'une requête cliente envoie ce JSON : 
 ```json
 {
     "login":"james",
@@ -1496,7 +1413,7 @@ Admettons qu’une requête cliente envoie ce JSON :
 <br/>
 
 La méthode **login** de la classe **AuthsResource** permet de récupérer cet objet JSON 
-et de le parser au sein de l’argument **json** :
+et de le parser au sein de l'argument **json** :
 ```java {5,11-12}
 @POST
 @Path("login")
@@ -1517,23 +1434,22 @@ Il ne faut pas oublier de préciser le type MIME de la requête qui sera consomm
 par la méthode, ici : **@Consumes(MediaType.APPLICATION_JSON)**.
 <br/>
 
-NB : Tout cela est possible car Jackson est bien configuré au sein de 
+NB : Tout cela est possible car la librairie **Jackson** est bien chargée au sein de 
 notre application JAX-RS.
 <br/>
 
 ## h.3) Contexte et @Context
-JAX-RS fournit un moyen simple de bénéficier d’informations associées au contexte du 
-déploiement d’une application et du contexte de requêtes individuelles. 
+JAX-RS fournit un moyen simple de bénéficier d'informations associées au contexte du 
+déploiement d'une application et du contexte de requêtes individuelles. 
 
-Ces informations sont disponibles pour les sous-classes d’Application, Root Resource Classes 
-et les providers. C’est l’annotation **@Context** qui permet, par exemple, d’injecter 
-un provider au sein d’une variable (argument d’une méthode ou champs d’une classe).
+Ces informations sont disponibles pour les sous-classes d'**Application**, **Root Resource Classes** et les **providers**. C'est l'annotation **@Context** qui permet, par exemple, d'injecter 
+un provider au sein d'une variable (argument d'une méthode ou champs d'une classe).
 <br/>
 
-Dans le code de la méthode **createOne** de **FilmResource**, c’est grâce à **@Context** 
-que l’on peut récupérer le contenu de la requête qui a été filtrée par 
+Dans le code de la méthode **createOne** de **FilmResource**, c'est grâce à **@Context** 
+que l'on peut récupérer le contenu de la requête qui a été filtrée par 
 **AuthorizationRequestFilter** :
-```java {5}
+```java {5-6}
 @POST
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
@@ -1544,7 +1460,7 @@ public Film createOne(Film film, @Context ContainerRequest request) {
 ```
 <br/>
 
-# <a id="sectionI"></a>i) Gestion des réponses et sérialisation d’objets JSON quelconques
+# <a id="sectionI"></a>i) Gestion des réponses et sérialisation d'objets JSON quelconques
 ## i.1) Introduction
 Dans le cadre du module 1, nous avons vu les moyens principaux de gérer des réponses.
 Nous renvoyions toujours des POJOs ou des listes de POJOs. 
@@ -1555,12 +1471,11 @@ mais en créant ses propres objets JSON.
 <br/>
 
 ## i.2) Sérialiser et renvoyer des objets JSON quelconques
-Dans le cas où des données à renvoyer à un client ne correspondent pas à un POJO, 
-nous pouvons créer en Java du Json via :
+Dans le cas où des données à renvoyer à un client ne correspondent pas à un POJO, nous pouvons créer en Java, à l'aide de librairie **Jackson**, du **JSON** via :
 - **JsonNode** si cela peut être la représentation d'un objet en JSON (**ObjectNode**) 
-ou d'un tableau en JSON (**ArrayNode**)
-- **ObjectNode** pour la représentation d'un objet en JSON
-- **ArrayNode**  pour la représentation d'un tableau en JSON
+ou d'un tableau en JSON (**ArrayNode**) ;
+- **ObjectNode** pour la représentation d'un objet en JSON ;
+- **ArrayNode**  pour la représentation d'un tableau en JSON.
 
 <br/>
 
@@ -1632,8 +1547,8 @@ public ObjectNode login(String login, String password) {
 ```
 <br/>
 
-La méthode **put** permet d’ajouter des champs à un objet de type **ObjecNode**.
-Nous pouvons ajouter autant de champs que nécessaire à l’objet JSON qui sera 
+La méthode **put** permet d'ajouter des champs à un objet de type **ObjecNode**.
+Nous pouvons ajouter autant de champs que nécessaire à l'objet JSON qui sera 
 sérialisé et renvoyé au client via une Root Resource (**AuthsResource** dans notre exemple).
 
 <br/>
@@ -1646,23 +1561,23 @@ https://github.com/e-vinci/baja-demos/tree/main/films-api-module2
 
 # <a id="sectionJ"></a>j) Exercice 2.1
 Peut-être avez-vous déjà entendu parler de cette mode montante dans le Web 
-qu’est la JAMstack ?
+qu'est la JAMstack ?
 <br/>
 
-Nous souhaitons développer un Headless CMS, c’est-à-dire un outil permettant 
+Nous souhaitons développer un Headless CMS, c'est-à-dire un outil permettant 
 de créer du contenu, très souvent utilisé dans le cadre de sites JAMstack.
 
 Un Headless CMS fournira une interface web pour créer du contenu (ou des données), 
-ainsi qu’une RESTful API mettant à disposition ce contenu.
+ainsi qu'une RESTful API mettant à disposition ce contenu.
 <br/>
 
-L’Headless CMS que nous souhaitons développer doit permettre de créer le contenu 
+L'Headless CMS que nous souhaitons développer doit permettre de créer le contenu 
 associé à un blog.
 
 Un blog sera structuré en pages. Une page aura un id, un titre, un URI, un contenu, 
-un auteur ainsi qu’un statut de publication.
+un auteur ainsi qu'un statut de publication.
 
-Le statut de publication d’une page peut actuellement prendre comme valeur :
+Le statut de publication d'une page peut actuellement prendre comme valeur :
 - « hidden »
 - « published »
 
@@ -1671,16 +1586,16 @@ Le statut de publication d’une page peut actuellement prendre comme valeur :
 Seul un utilisateur authentifié pourra lire, créer, modifier ou supprimer des pages.
 <br/>
 
-La modification d’une page, tout comme la suppression d’une page ne pourra se faire 
+La modification d'une page, tout comme la suppression d'une page ne pourra se faire 
 que par son auteur.
 <br/>
 
-L’ajout ou la modification d’une page ne sera possible que si le statut de publication 
+L'ajout ou la modification d'une page ne sera possible que si le statut de publication 
 donné correspond à un des deux statuts actuels (« hidden ou « published »). 
-Sinon un message d’erreur devra être renvoyé.
+Sinon un message d'erreur devra être renvoyé.
 <br/>
 
-La lecture d’une page, ou de toutes les pages, pourra être réalisée par n’importe
+La lecture d'une page, ou de toutes les pages, pourra être réalisée par n'importe
 quel utilisateur authentifié pour les pages dont le statut vaut « published ».
 <br/>
 
@@ -1700,7 +1615,7 @@ décrites ci-dessus.
 <br/>
 
 Dans un premier temps, veuillez formaliser les opérations associées à vos RESTful 
-APIs sous forme d’un tableau dans un fichier **README.md**. 
+APIs sous forme d'un tableau dans un fichier **README.md**. 
 
 Votre tableau doit reprendre les conventions REST présentées au point 
 [c) Rappel de conventions sur les RESTful APIs, authentification & autorisation](/modules/2#sectionC).
@@ -1721,12 +1636,12 @@ Voici un exemple pour l'API de films :
 | **films/{id}** | DELETE | JWT | DELETE ONE : Effacer la ressource identifiée |
 | **films/{id}** | PUT | JWT | UPDATE ONE : Replacer l'entièreté de la ressource par les données de la requête |
 ```
-- Soit c’est simplement un tableau HTML (`<table>`).
+- Soit c'est simplement un tableau HTML (`<table>`).
 
 <br/>
 
-Lors de l’implémentation de vos RESTful APIs, veuillez tester toutes les 
-méthodes offertes par votre application JAX-RS à l’aide d'un client léger (HTTP client d'IntelliJ 
+Lors de l'implémentation de vos RESTful APIs, veuillez tester toutes les 
+méthodes offertes par votre application JAX-RS à l'aide d'un client léger (HTTP client d'IntelliJ 
 ou Rest Client de VS Code).
 <br/>
 
@@ -1734,33 +1649,28 @@ Les ressources doivent persister au format JSON et vous devez échapper les cara
 <br/>
 
 Veuillez partir d'un archetype Maven comme décrit au point 
-[Module 1 : b) Création d’une première application sur base d’un Archetype Maven](/modules/1#sectionB).
+[Module 1 : b) Création d'une première application sur base d'un Archetype Maven](/modules/1#sectionB).
 
-Veuillez intégrer à votre application les fichiers utiles de la démo 
-https://github.com/e-vinci/baja-demos/tree/main/films-api-module2 présentée dans ce module-ci, 
+Veuillez intégrer à votre application les fichiers utiles de la démo https://github.com/e-vinci/baja-demos/tree/main/films-api-module2 présentée dans ce module-ci, 
 principalement : **pom.xml**, **Authorize**, **AuthorizationRequestFilter**, **Config**, **AuthsResource**, **UserDataService**
 
 <br/>
 
-Optionnel : vous souhaitez rapidement découvrir les principes d’une architecture 
-Web associée à la JAMstack ? https://jamstack.wtf/ 
+🍬 Optionnel : vous souhaitez rapidement découvrir les principes d'une architecture Web associée à la JAMstack ? https://jamstack.wtf/ 
 <br/>
 
-Optionnel : si vous souhaitez découvrir le format Markdown, notamment très souvent utilisé 
-dans certains sites JAMstack (source des données pour certains Headless CMS) : 
+🍬 Optionnel : si vous souhaitez découvrir le format Markdown, notamment très souvent utilisé dans certains sites JAMstack (source des données pour certains Headless CMS) : 
 https://www.markdownguide.org/basic-syntax/
 <br/>
 
-**Challenges** : 
+**🍬 Challenges** : 
 - **N°1** : Modifiez les autorisations au niveau des opérations de lecture (en gras pour la modification) : 
-la lecture d’une page, ou de toutes les pages, pourra être réalisée par n’importe 
+la lecture d'une page, ou de toutes les pages, pourra être réalisée par n'importe 
 quel utilisateur **anonyme ou authentifié** pour les pages dont le statut vaut « published ».
 Pour les pages dont le statut vaut « hidden », seul leur auteur authentifié pourra les lire.
 - **N°2** : lorsqu'un utilisateur tente d'effacer ou modifier une page dont il n'est pas l'auteur,
 renvoyer un code d'erreur approprié au client.
-- **N°3** : Si vous ne l'avez pas déjà fait, trouvez une façon de ne pas inclure le password lors de la sérialisation de celui-ci 
-dans une page (via l'auteur de la page). Attention, le password doit toujours être sérialisé 
-lors de l'enregistrement d'un utilisateur.
+- **N°3** : Si vous ne l'avez pas déjà fait, trouvez une façon de ne pas inclure le password lors de la sérialisation de celui-ci dans une page (via l'auteur de la page). Attention, le password doit toujours être sérialisé lors de l'enregistrement d'un utilisateur.
 
 
 <br/>
