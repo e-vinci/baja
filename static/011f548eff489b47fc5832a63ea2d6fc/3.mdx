@@ -11,25 +11,25 @@ et à la sérialisation au sein du framework.
 Voici les sujets traités :
 - a) [Bonnes pratiques Java : "Factory" et injection de dépendances](/modules/3#sectionA)
 - b) [Mapping d'exceptions à des réponses](/modules/3#sectionB)
-- c) [Sérialisation de POJOs et filtrage d’attributs](/modules/3#sectionC)
+- c) [Sérialisation de POJOs et filtrage d'attributs](/modules/3#sectionC)
 - d) [Exercice 3.1](/modules/3#sectionD)
-- e) [Exercice 3.2 optionnel](/modules/3#sectionE)
+- e) [🍬 Exercice 3.2 optionnel](/modules/3#sectionE)
 
 <br/>
 
 # <a id="sectionA"></a>a) Bonnes pratiques Java : "Factory" et injection de dépendances
 ## a.1) Introduction
-Dans les Modules 1 & 2, nous avons développé ensemble une RESTful API permettant de gérer des films.
+Dans les modules 1 & 2, nous avons développé ensemble une RESTful API permettant de gérer des films.
 
 Nous allons maintenant faire un refactor de cette application afin de mieux architecturer le code.
 Voici les motivations pour réarchitecturer l'API :
-- abstraction de l’implémentation de classes par l’utilisation d’interfaces ; 
-ainsi, lors d’interactions entre des objets de différents types, on ne doit pas se soucier 
-de l’implémentation des classes ; l’auteur d’une classe peut mettre à jour son implémentation 
+- abstraction de l'implémentation de classes par l'utilisation d'interfaces ; 
+ainsi, lors d'interactions entre des objets de différents types, on ne doit pas se soucier 
+de l'implémentation des classes ; l'auteur d'une classe peut mettre à jour son implémentation 
 sans casser les interactions avec celle-ci ; 
-cela participe à la mise en place d’un couplage faible entre objets ;
+cela participe à la mise en place d'un couplage faible entre objets ;
 - éviter le couplage fort entre objets, notamment en injectant les objets de service 
-(n’ayant pas d’états) et en utilisant des « Factory » pour créer des objets 
+(n'ayant pas d'états) et en utilisant des « Factory » pour créer des objets 
 du domaine (ayant un état).
 
 <br/>
@@ -42,19 +42,19 @@ Une « Factory » permet de créer des objets sans exposer leur logique de créa
 On créera donc des objets du domaine, des objets ayant un état, via une « Factory » spécifique.
 <br/>
 
-De plus, pour ne pas dépendre d’une « Factory » spécifique, on pourra créer une interface 
-pour chaque implémentation d’une « Factory ».
+De plus, pour ne pas dépendre d'une « Factory » spécifique, on pourra créer une interface 
+pour chaque implémentation d'une « Factory ».
 <br/>
 
 Nous allons donc mettre à jour notre API de gestion de films pour utiliser une factory :
 -	Extraire l'interface de **Film**. Via IntelliJ :
-    - Clic droit sur **Film**, **Refactor**, **Extract Interface**
+    - Clic droit sur **Film**, **Refactor**, **Extract Interface...**
     - Sélection de **Rename original class and use interface where possible**
     - Pour **Rename implementation class to**, écrivez : **FilmImpl**
     - Pour **Members To Form Interface**, sélectionnez (quasi) tout ; il n'est pas utile de 
-    sélectionner les méthodes qui redéfinissent la classe **Object** (toString, equals, 
-    hashCode...)
--	L’interface **Film** est maintenant implémentée par **FilmImpl**
+    sélectionner les méthodes qui redéfinissent la classe **Object** (**toString**, **equals**, 
+    **hashCode**...)
+-	L'interface **Film** est maintenant implémentée par **FilmImpl**
 -	De la même façon, veuillez extraire l'interface de **User** et renommer la classe 
 **User** en **UserImpl**.
 - Attention, les classes implémentant vos interfaces ne doivent pas être **public**.
@@ -77,8 +77,7 @@ public class DomainFactory{
 }
 ```
 - Extraire l'interface de **DomainFactory** et renommer cette classe en **DomainFactoryImpl** : 
-Le contrat (ou l’interface) **DomainFactory** est maintenant implémentée par le service **DomainFactoryImpl** 
-qui permet la création d'instance de **FilmImpl** ou de **UserImpl**.
+le contrat (ou l'interface) **DomainFactory** est maintenant implémentée par le service **DomainFactoryImpl** qui permet la création d'instance de **FilmImpl** ou de **UserImpl**.
 - Mettez à jour le code de votre API partout où des objets du domaine sont créés en utilisant 
 la factory. Dans un premier temps, nous allons créer une instance de la factory là où 
 elle doit être utilisée. Par la suite, nous verrons comment injecter une dépendance et devenir
@@ -105,8 +104,8 @@ private static Json<User> jsonDB = new Json<>(User.class);
 
 <br/>
 
-A ce stade-ci, la librairie Jackson qui s'occupe de la désérialisation ne sait pas 
-quelle implémentation est à utiliser pour les POJOs. 
+A ce stade-ci, la librairie **Jackson** qui s'occupe de la désérialisation ne connait pas 
+l'implémentation à utiliser pour les POJOs. 
 <br/>
 
 Si vous exécutez l'application, elle lancera des exceptions lorsque vous appellerez certaines 
@@ -119,8 +118,8 @@ Afin de diminuer le couplage des objets, les objets du domaine sont cachés
 derrière des interfaces.
 <br/>
 
-Afin que Jackson sache quelle implémentation est à utiliser pour la désérialisation 
-de JSON vers des POJOs associés à une interface, il faut l’indiquer via l’annotation
+Afin que **Jackson** sache quelle implémentation est à utiliser pour la désérialisation 
+de JSON vers des POJOs associés à une interface, il faut l'indiquer via l'annotation
 **@JsonDeserialize**.
 <br/>
 
@@ -149,13 +148,13 @@ public interface User {
 Veuillez exécuter l'application et vous assurer que tout est en ordre.
 <br/>
 
-## a.4) L’injection de dépendances
-Afin d’injecter des dépendances au sein d’une application implémentant Jakarta EE, 
-« Jakarta Dependency Injection » (ou Jakarta DI) permet d’obtenir des objets tout 
+## a.4) L'injection de dépendances
+Afin d'injecter des dépendances au sein d'une application implémentant Jakarta EE, 
+« Jakarta Dependency Injection » (ou Jakarta DI) permet d'obtenir des objets tout 
 en maximisant la réutilisation, la testabilité et la maintenabilité en comparaison 
 avec des approches plus traditionnelles (utilisation de constructeurs…).
 
-Pour pouvoir utiliser les API d’injection de dépendances au sein de Jersey, 
+Pour pouvoir utiliser les API d'injection de dépendances au sein de Jersey, 
 voici la librairie qui est contenue dans l'achetype Maven utilisé (voir fichier **pom.xml**) :
 ```xml
 <dependency>
@@ -169,17 +168,17 @@ voici la librairie qui est contenue dans l'achetype Maven utilisé (voir fichier
 Les services principaux de CDI (Contexts & Dependency Injection) sont :
 - Mise à disposition de contextes afin de lier le cycle de vie et les interactions de composants 
 ayant un état avec des contextes bien définis ;
-- L’injection de dépendance afin d’injecter des composants dans un application et choisir à 
-l’exécution l’implémentation particulière d’une interface (= le service) à injecter.
+- L'injection de dépendance afin d'injecter des composants dans un application et choisir à 
+l'exécution l'implémentation particulière d'une interface (= le service) à injecter.
 
 <br/>
 
-Pour injecter un objet au sein d’une classe, il faut :
-- Configurer votre application JAX-RS pour indiquer comment l’injection de dépendance doit créer vos instances ; on peut le faire via **bind(service).to(contrat)** et le chaîner avec **.in( scope)**. Les scopes disponibles sont :
+Pour injecter un objet au sein d'une classe, il faut :
+- Configurer votre application JAX-RS pour indiquer comment l'injection de dépendance doit créer vos instances ; on peut le faire via **bind(service).to(contrat)** et le chaîner avec **.in( scope)**. Les scopes disponibles sont :
     - **PerLookup** : pour chaque appel du service une instance du contrat est créée.
     - **RequestScoped** : une instance créé pour chaque requête.
     - **Singleton** : une seule instance du contrat créé par service.
-- Faire le binding via la redéfinition d’un **AbstractBinder**. Nous allons lier le contrat de 
+- Faire le binding via la redéfinition d'un **AbstractBinder**. Nous allons lier le contrat de 
 **DomainFactory** au service **DomainFactoryImpl** pour que une et une seul instance soit créée 
 et puisse être injectée dans l'application là où nécessaire.
 Pour ce faire, veuillez créer la classe **ApplicationBinder** au sein du package **utils** :
@@ -205,15 +204,14 @@ public class ApplicationBinder extends AbstractBinder {
 ```
 - Dans **Main**, il faut configurer l'application pour qu'elle utilise le nouveau Provider (**ApplicationBinder**).
 Veuillez mettre à jour **ResourceConfig** :
-```java {3}
+```java {2}
 final ResourceConfig rc = new ResourceConfig().packages("be.vinci.api")
-        .register(JacksonFeature.class)
         .register(ApplicationBinder.class);
 ```
-- Pour rappel, l’annotation **@Provider** ci-dessus permet de fournir notre propre implémentation 
-d’un provider, de la rendre disponible à l’exécution, à notre application JAX-RS.
+- Pour rappel, l'annotation **@Provider** ci-dessus permet de fournir notre propre implémentation 
+d'un provider, de la rendre disponible à l'exécution, à notre application JAX-RS.
 - Nous allons maitenant injecter la factory via l'annotation **@Inject**, qui sera injectée 
-sous forme de Singleton (une et une seule instance) conformément à sa configuration 
+sous forme de **Singleton** (une et une seule instance) conformément à sa configuration 
 au sein de l'**AbstractBinder**. Veuillez mettre à jour le code de **UserDataService** :
 ```java {3,9}
 public class UserDataService {
@@ -229,7 +227,7 @@ Veuillez exécuter l'application et vous assurer que tout est en ordre.
 
 <br/>
 
-Pour l’injection de dépendance au sein de Jakarta, une bonne documentation n’est pas évidente 
+Pour l'injection de dépendance au sein de Jakarta, une bonne documentation n'est pas évidente 
 à trouver. Les notions données ci-dessus devraient être suffisantes pour avancer. 
 <br/>
 
@@ -301,27 +299,27 @@ Veuillez exécuter l'application et vous assurer que tout est en ordre.
 <br/>
 
 Voici quelques références si vous souhaitiez approfondir le sujet de CDI :
-- Basique Injection de dépendances via Jersey’s HK2 : https://riptutorial.com/jersey/example/23632/basic-dependency-injection-using-jersey-s-hk2 
-- L’API pour l’injection de dépendance de Jakarta fournit quelques infos intéressantes : https://jakarta.ee/specifications/cdi/3.0/apidocs/
-- La spécification pour l’injection de dépendance : https://jakarta.ee/specifications/cdi/3.0/jakarta-cdi-spec-3.0.html
+- Basique Injection de dépendances via Jersey's HK2 : https://riptutorial.com/jersey/example/23632/basic-dependency-injection-using-jersey-s-hk2 
+- L'API pour l'injection de dépendance de Jakarta fournit quelques infos intéressantes : https://jakarta.ee/specifications/cdi/3.0/apidocs/
+- La spécification pour l'injection de dépendance : https://jakarta.ee/specifications/cdi/3.0/jakarta-cdi-spec-3.0.html
 
 <br/>
 
 # <a id="sectionB"></a>b) Mapping d'exceptions à des réponses
 ## b.1) Introduction
-Dans le module 1 nous avons vu comment renvoyer des codes et des messages d’erreur 
-à l’aide de **WebApplicationException**.
+Dans le module 1 nous avons vu comment renvoyer des codes et des messages d'erreur 
+à l'aide de **WebApplicationException**.
 <br/>
 
-Il est possible aussi, au sein d’une application JAX-RS, de mapper directement 
-une Java Exception à une réponse http d’erreur.
+Il est possible aussi, au sein d'une application JAX-RS, de mapper directement 
+une Java Exception à une réponse http d'erreur.
 
 Ceci est décrit dans le manuel utilisateur de Jersey : https://eclipse-ee4j.github.io/jersey.github.io/documentation/latest3x/representations.html#d0e6279
 
 En résumé, il suffit :
 -	soit de définir une exception spécifique qui étend **WebApplicationException** ; 
--	soit d’utiliser un provider personnalisé pour mapper une exception à une réponse ;
-dans ce cas, le provider doit implémenter l’interface **`ExceptionMapper<E extends Throwable>`**. 
+-	soit d'utiliser un provider personnalisé pour mapper une exception à une réponse ;
+dans ce cas, le provider doit implémenter l'interface **`ExceptionMapper<E extends Throwable>`**. 
 
 <br/>
 
@@ -409,7 +407,7 @@ réponse au client soient traitées de manière centralisée plutôt que de gér
 **try** / **catch** un peu partout.
 <br/>
 
-On peut aussi souhaiter de centraliser certains traitement pour toutes les exceptions lancées,
+On peut aussi souhaiter centraliser certains traitement pour toutes les exceptions lancées,
 y-compris les **WebApplicationException** lancées dans les Root Resources.
 
 La centralisation de ces traitements d'exception peut se faire au sein d'un **ExceptionMapper**.
@@ -448,9 +446,8 @@ public class WebExceptionMapper implements ExceptionMapper<Throwable> {
 
 Dans **Main**, il faut configurer l'application pour qu'elle utilise le nouveau Provider (**WebExceptionMapper**).
 Veuillez mettre à jour **ResourceConfig** :
-```java {4}
+```java {3}
 final ResourceConfig rc = new ResourceConfig().packages("be.vinci.api")
-        .register(JacksonFeature.class)
         .register(ApplicationBinder.class)
         .register(WebExceptionMapper.class);
 ```
@@ -520,7 +517,7 @@ public class AuthsResource {
 Veuillez exécuter l'application et vous assurer que tout est en ordre.
 <br/>
 
-# <a id="sectionC"></a>c) Sérialisation de POJOs et filtrage d’attributs
+# <a id="sectionC"></a>c) Sérialisation de POJOs et filtrage d'attributs
 ## c.1) Introduction
 Il existe pas mal de situation où l'on souhaiterait renvoyer qu'un subset des attributs 
 d'un POJO (ou d'une liste de POJOs). 
@@ -600,13 +597,13 @@ Dans ce cas-ci, il est important de filtrer l'attribut password de la représent
 renvoyée au client.
 <br/>
 
-Il existe plusieurs mécanismes pour filtrer des attributs lors d’opérations de 
+Il existe plusieurs mécanismes pour filtrer des attributs lors d'opérations de 
 sérialisation vers du JSON ou de désérialisation à partir de JSON.
 <br/>
 
 ## c.2) Filtrer des attributs de la représentation JSON d'un POJO : les vues JSON
 Un des mécanismes de filtrage d'attributs qui a été sélectionné pour ce cours est la 
-création de vues JSON au sein d’un POJO.
+création de vues JSON au sein d'un POJO.
 <br/>
 
 Ce mécanisme est réellement utile dans les cas où l'on doit filtrer différemment les attributs 
@@ -621,10 +618,10 @@ les données d'un nouvel **User**, là vous souhaitez sérialiser le **password*
 Pour ce faire, nous allons créer deux vues JSON que nous pourrons associer au POJO **User** implémenté 
 par **UserImpl** : 
 - une vue publique qui contient tous les attributs qui peuvent être lus par les clients de 
-l’API (l’id et le login dans le cadre d'un **User**) ;
-- une vue interne qui contient tous les attributs qui peuvent être écrits par l’API suite 
-aux opérations de création et de mise à jour d’une ressource 
-(l’id, le login et le password dans le cadre d'un **User**).
+l'API (l'id et le login dans le cadre d'un **User**) ;
+- une vue interne qui contient tous les attributs qui peuvent être écrits par l'API suite 
+aux opérations de création et de mise à jour d'une ressource 
+(l'id, le login et le password dans le cadre d'un **User**).
 
 <br/>
 
@@ -652,7 +649,7 @@ Attention à ce que la vue qui doit reprendre tous les attributs étende la vue 
 <br/>
 
 Ensuite, nous pouvons annotez nos vues JSON au sein du POJO **UserImpl** 
-via l’annotation **@JsonView** :
+via l'annotation **@JsonView** :
 ```java {1,3,5,7}
 @JsonInclude(JsonInclude.Include.NON_NULL) // ignore all null fields in order to avoid sending props not linked to a JSON view
 class UserImpl implements User {
@@ -672,11 +669,11 @@ class UserImpl implements User {
 
 <br/>
 
-L’annotation **@JsonInclude(JsonInclude.Include.NON_NULL)** est très importante : 
+L'annotation **@JsonInclude(JsonInclude.Include.NON_NULL)** est très importante : 
 elle indique que seulement les attributs non nuls seront inclus dans la sérialisation.
 <br/>
 
-Pour filtrer seulement la vue publique d’une POJO lors de la sérialisation, 
+Pour filtrer seulement la vue publique d'une POJO lors de la sérialisation, 
 voici ce qui doit encore être fait. 
 On va renvoyer un POJO, ou une liste de POJOs dont tous les champs qui ne font pas partie 
 de la vue publique sont initialisés à la valeur par défaut (**null** pour les objets). 
@@ -829,8 +826,8 @@ public interface User {
 
 <br/>
 
-Veuillez mettre à jour la méthode **register** de **AuthsResource** :
-```java {7-8,12}
+Veuillez mettre à jour la méthode **register** de **AuthsResource** (on va récupérer un **User** plutôt qu'un **JsonNode**):
+```java {5,7-8,12}
 @POST
 @Path("register")
 @Consumes(MediaType.APPLICATION_JSON)
@@ -853,8 +850,8 @@ public ObjectNode register(User user) {
 
 <br/>
 
-Veuillez mettre à jour la méthode **register** de **UserDataServiceImpl** :
-```java {7-8,12}
+Veuillez mettre à jour la méthode **register** de **UserDataServiceImpl** (réception d'un **User** plutôt que d'un **login** et d'un **password**.) :
+```java {1-2}
  @Override
 public ObjectNode register(User user) {        
     if (getOne(user.getLogin()) != null) // the user already exists !
@@ -867,7 +864,7 @@ public ObjectNode register(User user) {
 
 <br/>
 
-Veuillez aussi mettre à jour l'interface **UserDataService** :
+Veuillez aussi mettre à jour l'interface **UserDataService** (paramètre de type **User** plutôt que un **login** et un **password** sous forme de **String**):
 ```java {1}
 ObjectNode register(User user);
 ```
@@ -972,16 +969,11 @@ et la désérialisation ("**write**"").
 Il est plus simple à mettre en place que le mécanisme précédent.
 <br/>
 
-Ce mécanisme est applicable que dans les cas où toutes les opérations de sérialisation 
-d'un même POJO doivent filtrer les mêmes atttributs : 
-par exemple, si vous devez sérialiser des données que lors de l'envoi des données aux clients, 
-et que vous souhaitez toujours filtrer les mêmes données, alors ce mécanisme vous est recommandé.
+Ce mécanisme est applicable que dans les cas où toutes les opérations de sérialisation d'un même POJO doivent filtrer les mêmes atttributs. Par exemple, si vous devez sérialiser des données que lors de l'envoi des données aux clients, et que vous souhaitez toujours filtrer les mêmes données, alors ce mécanisme vous est recommandé.
 <br/>
 
-C'est éventuellement le cas lorsque l'on utilise une base de données pour faire 
-persister les données.
-Il n'est dès lors pas nécessaire de sérialiser les données tant pour les enregistrer  
-dans un fichier JSON, on doit juste renvoyer des données JSON pour répondre aux requêtes clientes.
+C'est éventuellement le cas lorsque l'on utilise une base de données pour faire persister les données.  
+Comme on ne doit pas sérialiser les données pour les enregistrer dans un fichier JSON, on doit juste filtrer les données lorsqu'elles sont renvoyées au format JSON pour répondre aux requêtes clientes.
 <br/>
 
 Voici au sein de **UserImpl** un exemple de comment filtrer l'attribut **password** 
@@ -1005,7 +997,7 @@ de ne jamais sérialiser le **password**. Par contre, il sera possible de désé
 <br/>
 
 Les différentes spécifications d'accès aux propriétés lors de la sérialisation sont définis ici :
-https://fasterxml.github.io/jackson-annotations/javadoc/2.6/com/fasterxml/jackson/annotation/JsonProperty.Access.html
+https://www.javadoc.io/doc/com.fasterxml.jackson.core/jackson-annotations/latest/index.html
 
 <br/>
 
@@ -1019,7 +1011,7 @@ https://github.com/e-vinci/baja-demos/tree/main/films-api
 Nous souhaitons continuer le développement du Headless CMS démarré au module 2. 
 
 Veuillez faire un refactoring du code de l'exercice 2.1 selon les concepts vus dans 
-ce module 3 : abstraction de l’implémentation de classes par l’utilisation d’interfaces, 
+ce module 3 : abstraction de l'implémentation de classes par l'utilisation d'interfaces, 
 ajout de factory et injection de dépendances.
 <br/>
 
@@ -1027,7 +1019,7 @@ Veuillez centraliser la gestion des exceptions au sein d'un **ExceptionMapper** 
 envoyer chaque message d'exception associé à une requête dans le corps de la réponse.
 <br/>
  
-Veuillez relancer les tests des méthodes offertes par votre application JAX-RS à l’aide d'un 
+Veuillez relancer les tests des méthodes offertes par votre application JAX-RS à l'aide d'un 
 client léger (HTTP client d'IntelliJ ou Rest Client de VS Code) pour vous assurer que votre 
 refactoring est OK.
 <br/>
@@ -1046,33 +1038,33 @@ de créer un nouveau projet.
 
 <br/>
 
-# <a id="sectionE"></a>e) Excercice 3.2 optionnel
+# <a id="sectionE"></a>e) 🍬 Excercice 3.2 optionnel
 Nous souhaitons continuer le développement du Headless CMS démarré au module 2. 
-Pour ce faire, nous allons créer la RESTful API qui s’occupera de gérer les contenus 
+Pour ce faire, nous allons créer la RESTful API qui s'occupera de gérer les contenus 
 de type « News ».
 <br/>
 
 Une **News** aura un id, un titre, une courte description, un contenu, un auteur, 
 un statut de publication, une date et heure de création 
-(par défaut la date système au moment de la création de l’instance), 
+(par défaut la date système au moment de la création de l'instance), 
 une date et heure ultime de péremption (un mois plus tard que la date de création par défaut), 
-une page associée (null par défaut) ainsi qu’une position dans la page associée. 
-Le statut de publication d’une news peut actuellement prendre comme valeur :
+une page associée (null par défaut) ainsi qu'une position dans la page associée. 
+Le statut de publication d'une news peut actuellement prendre comme valeur :
 -	« hidden »
 -	« published »
 
 <br/>
 
 Seul un utilisateur authentifié pourra créer des news.
-La modification d’une news, tout comme la suppression d’une news ne pourra se faire que 
+La modification d'une news, tout comme la suppression d'une news ne pourra se faire que 
 par son auteur.
 <br/>
 
-Est-ce qu’un auteur d’une news pourra associer une page à sa news qui est d’un autre auteur ? 
-Pour cet exercice, oui, l’association vers une page pourra se faire indépendamment de 
-l’auteur de la page.
+Est-ce qu'un auteur d'une news pourra associer une page à sa news qui est d'un autre auteur ? 
+Pour cet exercice, oui, l'association vers une page pourra se faire indépendamment de 
+l'auteur de la page.
 
-La lecture d’une news, ou de toutes les news, pourra être réalisée par n’importe quel utilisateur
+La lecture d'une news, ou de toutes les news, pourra être réalisée par n'importe quel utilisateur
 anonyme ou authentifié pour les news dont le statut vaut « published ».
 Pour les news dont le statut vaut « hidden », seul leur auteur authentifié pourra les lire.
 <br/>
@@ -1089,17 +1081,17 @@ Pour les news dont le statut vaut « hidden », seul leur auteur authentifié po
 
 Veuillez développer une application JAX-RS mettant à disposition les opérations 
 décrites ci-dessus, en suivant les bonnes pratiques données dans ce module : abstraction 
-de l’implémentation, création de « Factory », injection de dépendances pour vos services…
+de l'implémentation, création de « Factory », injection de dépendances pour vos services…
 <br/>
 
 Dans un premier temps, veuillez formaliser les opérations associées à vos RESTful APIs 
-sous forme d’un tableau dans un fichier **README.md**. 
+sous forme d'un tableau dans un fichier **README.md**. 
 Votre tableau devrait reprendre les conventions REST présentées au module 2  
 ([c) Rappel de conventions sur les RESTful APIs, authentification & autorisation](/modules/2#sectionC)).
 <br/>
  
-Lors de l’implémentation de vos RESTful APIs, veuillez tester toutes les 
-méthodes offertes par votre application JAX-RS à l’aide d'un client léger (HTTP client d'IntelliJ 
+Lors de l'implémentation de vos RESTful APIs, veuillez tester toutes les 
+méthodes offertes par votre application JAX-RS à l'aide d'un client léger (HTTP client d'IntelliJ 
 ou Rest Client de VS Code).
 <br/>
 <br/>
@@ -1108,22 +1100,22 @@ Quelques tips :
 - Continuez le projet développé dans le cadre de l'Exercice 3.1. Il n'est pas nécessaire 
 de créer un nouveau projet.
 - Pour la sérialisation de dates, nous vous conseillons ce lien : https://www.baeldung.com/jackson-serialize-dates.
-Le plus simple est d’utiliser des instances de **Date** en les annotant via 
+Le plus simple est d'utiliser des instances de **Date** en les annotant via 
 **@JsonFormat** si vous souhaitez avoir une date formatée sous forme de String plutôt 
-qu’un nombre long.
-- Pour des valeurs par défaut de POJOs, n’hésitez pas à utiliser le constructeur sans paramètre :
-    - La date de création correspond à la date à l’instant de la création de l’instance.
+qu'un nombre long.
+- Pour des valeurs par défaut de POJOs, n'hésitez pas à utiliser le constructeur sans paramètre :
+    - La date de création correspond à la date à l'instant de la création de l'instance.
     - La date de péremption peut être automatiquement mise à un mois après la date de 
-    création en utilisant un objet de **Calendar** pour la conversion d’une date.
+    création en utilisant un objet de **Calendar** pour la conversion d'une date.
 
 <br/>
 
-**Challenges optionnels** : 
-- Nous vous proposons d’utiliser les vues JSON afin de ne jamais écrire 
+**🍬 Challenges optionnels** : 
+- Nous vous proposons d'utiliser les vues JSON afin de ne jamais écrire 
 dans **db.json** toutes les infos liées à la page associée à une news. On souhaiterait juste 
 enregistrer l'id et le titre de la page.
 - De plus, lorsque que des infos associées à une news sont renvoyées à un client, 
 on ne souhaite pas renvoyer toutes les infos de la page associée à la news. 
-Dans ce cas-ci, on enregistra et renverra que ces deux propriétés d’une page associée à une news : 
+Dans ce cas-ci, on enregistra et renverra que ces deux propriétés d'une page associée à une news : 
 **id** et **title**.
 <br/>
