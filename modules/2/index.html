@@ -988,9 +988,7 @@ ou d&#x27;un tableau en JSON (<strong>ArrayNode</strong>) ;</li><li><strong>Obje
   &quot;login&quot;: &quot;james&quot;
 }
 </code></pre><br/><p>Dans la méthode <strong>login</strong> de la classe <strong>AuthsResource</strong>, voici le code permettant
-de renvoyer une représentation JSON de cet objet via un <strong>ObjectNode</strong> :</p><pre><code class="language-java" metastring="numbered {3,8,18,24}">public class AuthsResource {
-    //...
-    private final ObjectMapper jsonMapper = new ObjectMapper();
+de renvoyer une représentation JSON de cet objet via un <strong>ObjectNode</strong> :</p><pre><code class="language-java" metastring="numbered {6,16,22}">public class AuthsResource {
     //...
     @POST
     @Path(&quot;login&quot;)
@@ -1013,27 +1011,35 @@ de renvoyer une représentation JSON de cet objet via un <strong>ObjectNode</str
         }
         return publicUser;
     }
+    //...
+}
 </code></pre><br/><p>C&#x27;est donc la méthode <strong>login</strong> de <strong>UserDataService</strong> qui crée la représentation JSON
 d&#x27;un objet contenant un <strong>token</strong>, un <strong>id</strong> et un <strong>login</strong> comme propriétés.
 Le code permettant de créer une représentation de cet objet JSON utilise un
-<strong>ObjectMapper</strong> permettant de créer un <strong>ObjectNode</strong> :</p><pre><code class="language-java" metastring="numbered {9-13}">public ObjectNode login(String login, String password) {
-    User user = getOne(login);
-    if (user == null || !user.checkPassword(password))
-        return null;
-    String token;
-    try {
-        token = JWT.create().withIssuer(&quot;auth0&quot;)
-                .withClaim(&quot;user&quot;, user.getId()).sign(this.jwtAlgorithm);
-        ObjectNode publicUser = jsonMapper.createObjectNode()
-                .put(&quot;token&quot;, token)
-                .put(&quot;id&quot;, user.getId())
-                .put(&quot;login&quot;, user.getLogin());
-        return publicUser;
+<strong>ObjectMapper</strong> permettant de créer un <strong>ObjectNode</strong> :</p><pre><code class="language-java" metastring="numbered {3,13-17}">public class UserDataService {
+    //...
+    private final ObjectMapper jsonMapper = new ObjectMapper();
+    //...
+    public ObjectNode login(String login, String password) {
+        User user = getOne(login);
+        if (user == null || !user.checkPassword(password))
+            return null;
+        String token;
+        try {
+            token = JWT.create().withIssuer(&quot;auth0&quot;)
+                    .withClaim(&quot;user&quot;, user.getId()).sign(this.jwtAlgorithm);
+            ObjectNode publicUser = jsonMapper.createObjectNode()
+                    .put(&quot;token&quot;, token)
+                    .put(&quot;id&quot;, user.getId())
+                    .put(&quot;login&quot;, user.getLogin());
+            return publicUser;
 
-    } catch (Exception e) {
-        System.out.println(&quot;Unable to create token&quot;);
-        return null;
+        } catch (Exception e) {
+            System.out.println(&quot;Unable to create token&quot;);
+            return null;
+        }
     }
+    //...
 }
 </code></pre><br/><p>La méthode <strong>put</strong> permet d&#x27;ajouter des champs à un objet de type <strong>ObjecNode</strong>.
 Nous pouvons ajouter autant de champs que nécessaire à l&#x27;objet JSON qui sera
