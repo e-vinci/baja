@@ -1491,10 +1491,8 @@ Admettons que nous souhaitons construire une réponse JSON de ce type :
 
 Dans la méthode **login** de la classe **AuthsResource**, voici le code permettant 
 de renvoyer une représentation JSON de cet objet via un **ObjectNode** :
-```java numbered {3,8,18,24}
+```java numbered {6,16,22}
 public class AuthsResource {
-    //...
-    private final ObjectMapper jsonMapper = new ObjectMapper();
     //...
     @POST
     @Path("login")
@@ -1517,6 +1515,8 @@ public class AuthsResource {
         }
         return publicUser;
     }
+    //...
+}
 ```
 <br/>
 
@@ -1524,25 +1524,31 @@ C'est donc la méthode **login** de **UserDataService** qui crée la représenta
 d'un objet contenant un **token**, un **id** et un **login** comme propriétés. 
 Le code permettant de créer une représentation de cet objet JSON utilise un 
 **ObjectMapper** permettant de créer un **ObjectNode** :
-```java numbered {9-13}
-public ObjectNode login(String login, String password) {
-    User user = getOne(login);
-    if (user == null || !user.checkPassword(password))
-        return null;
-    String token;
-    try {
-        token = JWT.create().withIssuer("auth0")
-                .withClaim("user", user.getId()).sign(this.jwtAlgorithm);
-        ObjectNode publicUser = jsonMapper.createObjectNode()
-                .put("token", token)
-                .put("id", user.getId())
-                .put("login", user.getLogin());
-        return publicUser;
+```java numbered {3,13-17}
+public class UserDataService {
+    //...
+    private final ObjectMapper jsonMapper = new ObjectMapper();
+    //...
+    public ObjectNode login(String login, String password) {
+        User user = getOne(login);
+        if (user == null || !user.checkPassword(password))
+            return null;
+        String token;
+        try {
+            token = JWT.create().withIssuer("auth0")
+                    .withClaim("user", user.getId()).sign(this.jwtAlgorithm);
+            ObjectNode publicUser = jsonMapper.createObjectNode()
+                    .put("token", token)
+                    .put("id", user.getId())
+                    .put("login", user.getLogin());
+            return publicUser;
 
-    } catch (Exception e) {
-        System.out.println("Unable to create token");
-        return null;
+        } catch (Exception e) {
+            System.out.println("Unable to create token");
+            return null;
+        }
     }
+    //...
 }
 ```
 <br/>
