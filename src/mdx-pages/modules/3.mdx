@@ -916,7 +916,7 @@ tous les attributs qui ont une valeur par défaut.
 Pour visualiser cela, veuillez mettre à jour **UserImpl**:
  ```java {1}
 @JsonInclude(JsonInclude.Include.NON_DEFAULT) // ignore all default fields in order to avoid sending props not linked to a JSON view
-class UserImpl implements User {class UserImpl implements User {
+class UserImpl implements User {
     @JsonView(Views.Public.class)    
     //.....
 ```
