@@ -30,14 +30,13 @@ concernant les sessions des clients.
 
 Cela permet principalement de rendre l'architecture 
 facilement « scalable ».Chaque requête vers une RESTful API protégée (via JWT) 
-devra contenir toutes les données pour être authentifié / autorisé.
+devra contenir toutes les données pour que le client puisse être authentifié / autorisé.
 <br/>
 
 Une RESTful API met à disposition des opérations sur des ressources via :
 - des URI
-- des méthodes HTTPS
-- des représentations des ressources compréhensibles tant par les clients que les
-serveurs
+- des méthodes HTTP
+- des représentations des ressources compréhensibles tant par les clients que les serveurs (JSON)
 
 <br/>
 
@@ -78,16 +77,17 @@ Un **archetype Maven** est un boilerplate de projet mis à disposition sur un re
 
 Jersey offre différents archetypes Maven.
 
-Pour plus d'infos: https://eclipse-ee4j.github.io/jersey.github.io/documentation/latest3x/getting-started.html#new-from-archetype 
+Pour plus d'infos: https://eclipse-ee4j.github.io/jersey.github.io/documentation/latest31x/getting-started.html#new-from-archetype 
 <br/>
 
-A l'aide d'IntelliJ, **mis à jour** vers une version récente si vous utilisez votre laptop (2022.2.4 au 25/01/2023), créez un projet ou un module Maven en utilisant un archetype fournit par Jersey :
+A l'aide d'IntelliJ, **mis à jour** vers une version récente si vous utilisez votre laptop (2023.3.2 au 12/01/2024), créez un projet ou un module Maven en utilisant un archetype fournit par Jersey :
 - Clic sur **File**, **New**, **Project...**.
-- Pour **Name**, vous pouvez indiquer **films-api**.
 - Dans la colonne de gauche, pour **Generators**, clic sur **Maven Archetype**.
-- Pour le JDK, choisissez une version LTS (17 au 25/01/2023).
+- Pour **Name**, vous pouvez indiquer **films-api**.
+- Pour le JDK, choisissez une version LTS (21 au 12/01/2024).
 - Pour **Catalog**, sélectionnez **Maven Central**.
 - Pour **Archetype**, sélectionnez : **org.glassfish.jersey.archetypes:jersey-quickstart-grizzly2** ; attention à ne pas prendre l'archetype de **sun** (trop ancienne) mais bien celui de **glassfish**.
+- Pour **Version**, la dernière sera déjà sélectionnée : ça sera **3.1.5** (au 12/01/2024).
 - Clic sur **Advanced Settings**.
 - Ajoutez le nom de domaine dans **GroupId**, par exemple : **be.vinci**
 
@@ -111,8 +111,8 @@ Pour terminer, veuillez mettre à jour les versions de vos dépendances (directe
     <version>3.8.1</version>
     <inherited>true</inherited>
     <configuration>
-        <source>17</source>
-        <target>17</target>
+        <source>21</source>
+        <target>21</target>
     </configuration>
 </plugin>
  ```
@@ -122,7 +122,7 @@ Pour terminer, veuillez mettre à jour les versions de vos dépendances (directe
 
 # <a id="sectionC"></a>c) Première opération de lecture de ressources JSON
 ## c.1) Introduction
-La gestion des ressources est décrite dans le manuel utilisateur de Jersey : https://eclipse-ee4j.github.io/jersey.github.io/documentation/latest3x/jaxrs-resources.html
+La gestion des ressources est décrite dans le manuel utilisateur de Jersey : https://eclipse-ee4j.github.io/jersey.github.io/documentation/latest31x/jaxrs-resources.html
 
 Pour expliquer ces concepts, nous allons développer la fonction permettant de lire tous les films en continuant le projet initialisé à la section précédente.
 Nous souhaitons, lorsque nous indiquons [http://localhost:8080/films](http://localhost:8080/films) dans le browser, qu'une liste de films par défaut soit renvoyée au format JSON vers l'utilisateur.
@@ -313,7 +313,7 @@ JAVA, comme une ArrayList de films, vers du JSON.
 
 Pour ce faire, veuillez ajouter ajoutez une dépendance à Jackson :
 - Via IntelliJ, pour ajouter une dépendance : 
-  - cliquez au sein de votre fichier **/pom.xml** : **Alt + Insert**, **Add dependency...**
+  - cliquez au sein de votre fichier **/pom.xml** : **Alt + Insert** (macOS: ⌘ Command+N), **Dependency**
   - tapez : **jersey-media-json-jackson**
   - Installez les dépendances Maven en cliquant sur le bouton représentant "**Load Maven Changes**"
 - Si vous n'avez pas IntelliJ, vous pouvez simplement rajouter cela dans votre **pom.xml** :
@@ -371,7 +371,7 @@ Dans une application RESTful, cela n'a pas de sens car elle est "stateless". Dè
 ne dépend pas de l'état de la ressource, il est inutile de créer une nouvelle instance de ressource pour chaque requête.
 <br/>
 
-Si vous souhaitez plus de détails concernant le cycle de vie de Root Resources : https://eclipse-ee4j.github.io/jersey.github.io/documentation/latest3x/jaxrs-resources.html#d0e2470
+Si vous souhaitez plus de détails concernant le cycle de vie de Root Resources : https://eclipse-ee4j.github.io/jersey.github.io/documentation/latest31x/jaxrs-resources.html#d0e2536
 <br/>
 
 ### c.4.2) Scope : une instance par application JAX-RS
@@ -661,100 +661,12 @@ d'IntelliJ.
 <br/>
 
 ## f.2) HTTP Client d'IntelliJ
-Dans le cadre de cours, si vous programmez sous IntelliJ, nous vous recommandons d'utiliser son client
-HTTP pour faire vos requêtes vers vos API Rest.
+Dans le cadre de cours, si vous programmez sous IntelliJ, nous vous recommandons d'utiliser son client HTTP pour faire vos requêtes vers vos API Rest.
+En 2023, HTTP Client a évolué et on peut l'utiliser comme Rest Client, la syntaxe est la même pour ce que l'on souhaite faire dans ce module.
 <br/>
 
-Quelques notions pour utiliser le client HTTP d'IntelliJ :
-- Il faut créer un fichier **.http** (ou **.rest**) contenant les requêtes vers vos RESTful APIs.  
-NB : Il est approprié de créer un fichier par **Root Resource** (par type de ressources).
-- Chaque requête est introduite par **###** (3 "**#**"" ou plus)
-- Pour exécuter une requête, il suffit de cliquer sur **Run HTTP Request** (le triangle vert à gauche 
-dans votre éditeur de code)
-- Lorsqu'on envoie des données au format JSON, il est important d'avoir un espace avant 
-les accolades (avant le "**&#123;**" )
-- On peut définir des variables d'environnement dans un "**Environment file**". Il suffit de cliquer à côté de **Run with:** sur **Add Environment to Public File...** (ou sur **Add new environment file** dans la console) pour créer un fichier **http-client.env.json** dans lequel vous pouvez ajouter vos variables.
-Voici à quoi ressemble une variable **baseUrl** dans **http-client.env.json** : 
-```json
-{
-  "dev": {
-    "baseUrl": "http://localhost:8080"
-  }
-}
-```
-<br/>
-
-- Pour lier votre fichier d'environnement avec votre fichier de requêtes, pour **Run with:**, vous devez sélectionner **dev**.
-- Pour utiliser la variable **baseUrl**, il suffit de la mettre entre double accolades.  
-Par exemple, voici la requête permettant de lire tous les films :
-
-```json
-### Read All films
-GET {{baseUrl}}/films
-```
-<br/>
-
-Nous allons maintenant tester l'API de gestion de films que nous avons créée pour tout ce que nous 
-ne pouvons pas tester directement via un browser.
-<br/>
-
-Au sein de VS Code, veuillez créer un fichier **films.http**.
-
-Veuillez y ajouter cette requête pour la création d'un film et exécutez la requête : 
-```json
-### Create One film
-POST {{baseUrl}}/films 
-Content-Type: application/json
-
-{
-"title" : "Venom: Let There Be Carnage",
-"duration" : 97,
-"budget" : 110,
-"link" : "https://en.wikipedia.org/wiki/Venom:_Let_There_Be_Carnage"
-} 
-```
-<br/>
-
-Veuillez ajouter cette requête de suppression d'un film dans **films.http** et l'exécuter :
-```json
-DELETE {{baseUrl}}/films/5
-```
-<br/>
-
-Veuillez ajouter cette requête de suppression d'un film dans **films.http** et l'exécuter :
-```json
-### Update One film
-PUT {{baseUrl}}/films/4
-Content-Type: application/json
-
-{
-"title" : "Venom: Let There Be Carnage",
-"duration" : 97,
-"budget" : 110,
-"link" : "https://en.wikipedia.org/wiki/Venom:_Let_There_Be_Carnage"
-} 
-```
-<br/>
-
-## f.3) REST Client sous VS Code
-Dans le cadre de ce cours, nous pouvons aussi utiliser REST Client de Visual Studio Code pour tester nos APIs : 
-https://github.com/Huachao/vscode-restclient
-
-<br/>
-Il est inutile de lire ce paragraphe si vous avez choisi de faire vos requêtes à l'aide d'IntelliJ.
-
-<br/>
-<br/>
-
-Si ça n'est pas déjà fait, veuillez installer Visual Studio Code.
-<br/>
-Cliquez sur Extensions au sein de VS Code. 
-
-Recherchez l'extension **REST Client** et cliquez sur **Install**.
-<br/>
-
-Quelques notions pour utiliser REST Client :
-- Il faut créer un fichier **.http** (ou **.rest**) contenant les requêtes vers vos RESTful APIs.
+Quelques notions pour vos requêtes HTTP :
+- Il faut créer un fichier **.http** contenant les requêtes vers vos RESTful APIs.
 <br/>NB : Il est approprié de créer un fichier par Root Resource (par type de ressources).
 - Chaque requête est introduite par **###** (3 "**#**"" ou plus)
 - Pour exécuter une requête, il suffit de cliquer sur **Send Request**
@@ -771,13 +683,12 @@ GET {{baseUrl}}/films
 ```
 <br/>
 
-Nous allons maintenant tester l'API de gestion de films que nous avons créée pour tout ce que nous 
-ne pouvons pas tester directement via un browser.
+Nous allons maintenant tester l'API de gestion de films que nous avons créée pour tout ce que nous ne pouvons pas tester directement via un browser.
 <br/>
 
-Au sein de VS Code, veuillez créer un fichier **films.http**.
+Veuillez créer un fichier **films.http** dans un dossier au sein de votre projet (ou de votre module IntelliJ). Ce dossier pourrait s'appeler **requests** par exemple.
 
-Veuillez y ajouter cette requête pour la création d'un film et exécutez la requête : 
+Veuillez y ajouter cette requête pour la création d'un film et l'exécuter :
 ```json
 @baseUrl = http://localhost:8080
 ### Create One film
@@ -814,6 +725,21 @@ Content-Type: application/json
 ```
 <br/>
 
+Si vous souhaitez en savoir plus sur Http Client d'IntelliJ, vous pouvez consulter : https://www.jetbrains.com/help/idea/http-client-in-product-code-editor.html
+<br/>
+
+Sachez que malheureusement Http Client est disponible que sur la version "Ultimate" d'IntelliJ ; la version "Community" ne permet pas d'utiliser Http Client 😱.
+<br/>
+
+## f.3) REST Client sous VS Code
+Dans le cadre de ce cours, nous pouvons aussi utiliser REST Client de Visual Studio Code pour tester nos APIs : 
+https://github.com/Huachao/vscode-restclient
+
+<br/>
+L'utilisation de Rest Client est la même que pour HTTP Client d'IntelliJ.
+<br/>
+<br/>
+
 # <a id="sectionG"></a>g) Sérialisation de fichiers JSON
 ## g.1) Introduction
 L'utilisation de Jackson est documentée, mais celle-ci semble fort dispersée sur le Web.
@@ -843,7 +769,7 @@ sérialiser / désérialiser des données JSON à l'aide de Jackson
 
 Voici quelques références malgré tout pour la documentation, si vous souhaitez approfondir :
 -	Tutoriel reprenant les fonctions principales de Jackson : https://www.baeldung.com/jackson-object-mapper-tutorial 
--	Le point d'entrée de Jackson au sein de Jersey : https://eclipse-ee4j.github.io/jersey.github.io/documentation/latest3x/media.html#json.jackson
+-	Le point d'entrée de Jackson au sein de Jersey : https://eclipse-ee4j.github.io/jersey.github.io/documentation/latest31x/media.html#json.jackson
 -	Pour une idée de base de la libraire Jackson : https://github.com/FasterXML/jackson-docs ou https://github.com/FasterXML/jackson-databind 
 
 <br/>
@@ -1039,7 +965,7 @@ Dans le cadre de votre API de gestion de films, veuillez installer la dépendanc
 <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-text</artifactId>
-            <version>1.10.0</version>
+            <version>1.11.0</version>
 </dependency>
 ```
 <br/>
