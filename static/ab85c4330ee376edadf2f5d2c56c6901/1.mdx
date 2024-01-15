@@ -1,0 +1,1136 @@
+---
+title: "Module 1 : découverte de JAX-RS"
+description: "Découverte de JAX-RS"
+---
+
+# Module 1 : découverte de JAX-RS
+Ce module vous offre une première découverte du framework JAX-RS par le biais d'un tutoriel. 
+
+Voici les sujets traités :
+- a) [Rappel de conventions sur les RESTful API](/modules/1#sectionA)
+- b) [Création d'une première application sur base d'un Archetype Maven](/modules/1#sectionB)
+- c) [Première opération de lecture de ressources JSON](/modules/1#sectionC)
+- d) [Gestion des paramètres de requêtes](/modules/1#sectionD)
+- e) [Gestion des réponses](/modules/1#sectionE)
+- f) [Envoi de requêtes à ses APIs](/modules/1#sectionF)
+- g) [Sérialisation de fichiers JSON](/modules/1#sectionG)
+- h) [Gestion des caractères dangereux](/modules/1#sectionH)
+- i) [Exercice 1.1](/modules/1#sectionI)
+
+<br/>
+
+# <a id="sectionA"></a>a) Rappel de conventions sur les RESTful API
+Un RESTful web service, ou RESTful API, met à disposition des opérations sur des ressources. 
+Ces opérations seront disponibles via des requêtes http associées à des URLs construites 
+selon les conventions RESTful.
+<br/>
+
+Les RESTful APIs sont **stateless** : le serveur n'enregistre aucune information côté serveur 
+concernant les sessions des clients. 
+
+Cela permet principalement de rendre l'architecture 
+facilement « scalable ».Chaque requête vers une RESTful API protégée (via JWT) 
+devra contenir toutes les données pour que le client puisse être authentifié / autorisé.
+<br/>
+
+Une RESTful API met à disposition des opérations sur des ressources via :
+- des URI
+- des méthodes HTTP
+- des représentations des ressources compréhensibles tant par les clients que les serveurs (JSON)
+
+<br/>
+
+Voici un résumé des conventions associées aux applications REST :
+- 1 collection de données = des ressources (d'un certain type)
+- 1 élément d'une collection = 1 ressource
+- 1 adresse unique pour chaque ressource = 1 URL
+- Media type = format de donnée représentant une ressource : JSON, XML, HTML, TXT, JPEG,
+PNG…
+- Le type d'opération sur une ressource est défini via la méthode http de la requête :
+  - GET = READ (la ou les ressource(s))
+  - POST = CREATE 
+  - DELETE = DELETE : )
+  - PUT = UPDATE
+
+<br/>
+
+Voici un exemple d'application de ces conventions RESTful dans le cadre d'une RESTful API 
+permettant de gérer des films :
+
+| URI | Méthode HTTP | Opération |
+|---|---|---|
+| **films** | GET | READ ALL : Lire toutes les ressources de la collection |
+| **films?minimumduration=value** | GET | READ ALL FILTERED : Lire toutes les ressources de la collection selon le filtre donné |
+| **films/{id}** | GET | READ ONE : Lire la ressource identifiée |
+| **films** | POST | CREATE ONE : Créer une ressource basée sur les données de la requête |
+| **films/{id}** | DELETE | DELETE ONE : Effacer la ressource identifiée |
+| **films/{id}** | PUT | UPDATE ONE : Replacer l'entièreté de la ressource par les données de la requête |
+
+<br/>
+Nous allons maintenant développer une application JAX-RS offrant une API de films.
+<br/>
+<br/>
+
+# <a id="sectionB"></a>b) Création d'une première application sur base d'un Archetype Maven
+Un **archetype Maven** est un boilerplate de projet mis à disposition sur un repository.
+<br/>
+
+Jersey offre différents archetypes Maven.
+
+Pour plus d'infos: https://eclipse-ee4j.github.io/jersey.github.io/documentation/latest31x/getting-started.html#new-from-archetype 
+<br/>
+
+A l'aide d'IntelliJ, **mis à jour** vers une version récente si vous utilisez votre laptop (2023.3.2 au 12/01/2024), créez un projet ou un module Maven en utilisant un archetype fournit par Jersey :
+- Clic sur **File**, **New**, **Project...**.
+- Dans la colonne de gauche, pour **Generators**, clic sur **Maven Archetype**.
+- Pour **Name**, vous pouvez indiquer **films-api**.
+- Pour le JDK, choisissez une version LTS (21 au 12/01/2024).
+- Pour **Catalog**, sélectionnez **Maven Central**.
+- Pour **Archetype**, sélectionnez : **org.glassfish.jersey.archetypes:jersey-quickstart-grizzly2** ; attention à ne pas prendre l'archetype de **sun** (trop ancienne) mais bien celui de **glassfish**.
+- Pour **Version**, la dernière sera déjà sélectionnée : ça sera **3.1.5** (au 12/01/2024).
+- Clic sur **Advanced Settings**.
+- Ajoutez le nom de domaine dans **GroupId**, par exemple : **be.vinci**
+
+<br/>
+
+Explorez ce qui est offert au sein de ce module ou projet :
+- Lancez la méthode **main** de la classe **Main**.
+- Une tout première méthode **getIt** est offerte au sein de la ressource **MyResource**.
+- Consommez cette méthode **getIt**  à l'aide d'un client, via un browser, à l'URL [http://localhost:8080/myresource](http://localhost:8080/myresource).
+- Il existe aussi un "acceptance test" qui est offert dans **/src/test/java/be.vinci/MyResourceTest**. N'hésitez pas à stopper l'exécution de votre application et de lancer le test nommé **testGetIt**.
+
+<br/>
+
+
+Pour terminer, veuillez mettre à jour les versions de vos dépendances (directement dans **/pom.xml**).:
+- Faites en sorte de configurer aussi votre projet pour bénéficier de la version LTS de Java, actuellement la version 17.
+```markup {6-9}
+<plugin>
+    <groupId>org.apache.maven.plugins</groupId>
+    <artifactId>maven-compiler-plugin</artifactId>
+    <version>3.8.1</version>
+    <inherited>true</inherited>
+    <configuration>
+        <source>21</source>
+        <target>21</target>
+    </configuration>
+</plugin>
+ ```
+- Une fois la configuration mise à jour, n'oubliez pas de recharcher vos dépendances en cliquant sur l'icône **Load Maven Changes**.
+
+<br/>
+
+# <a id="sectionC"></a>c) Première opération de lecture de ressources JSON
+## c.1) Introduction
+La gestion des ressources est décrite dans le manuel utilisateur de Jersey : https://eclipse-ee4j.github.io/jersey.github.io/documentation/latest31x/jaxrs-resources.html
+
+Pour expliquer ces concepts, nous allons développer la fonction permettant de lire tous les films en continuant le projet initialisé à la section précédente.
+Nous souhaitons, lorsque nous indiquons [http://localhost:8080/films](http://localhost:8080/films) dans le browser, qu'une liste de films par défaut soit renvoyée au format JSON vers l'utilisateur.
+<br/>
+
+Dans la classe **Main** du projet, on retrouve :
+```java
+final ResourceConfig rc = new ResourceConfig().packages("be.vinci");
+```
+Cette ligne de code permet scanner toutes les ressources JAX-RS 
+(ainsi que les providers que nous verrons plus tard) présentes dans le package **be.vinci** et de les déployer au sein d'un container http de Grizzly.
+<br/>
+
+Les classes associées à des ressources (**MyResource** dans ce projet) sont enregistrées 
+au sein de l'application. Le framework pourra injecter des instances de ces ressources le temps voulu.
+<br/>
+
+Pour pouvoir utiliser l'injection de dépendances, la librairie de Jersey permettant de le faire a été installée. 
+Celle-ci se trouve indiquée de la sorte dans **/pom.xml** :
+```markup
+ <dependency>
+            <groupId>org.glassfish.jersey.inject</groupId>
+            <artifactId>jersey-hk2</artifactId>
+ </dependency>
+ ```
+
+Dans la classe **Main**, la **BASE_URI** pointe normalement déjà vers [http://localhost:8080/](http://localhost:8080/).
+```java
+public static final String BASE_URI = "http://localhost:8080/";
+```
+<br/>
+
+## c.2) Root resources
+Des ressources d'un même type sont gérées au sein d'une « Root Resource Class ». 
+Une Root Resource est un **POJO** annotée de **@Path("URI_PATH")**.
+
+
+Le code précédent indique que la « Root Resource » **MyResource** sera mis à disposition via **/myresource** .
+```java {1}
+@Path("myresource")
+public class MyResource {
+```
+
+<br/>
+NB : Une Root Resource est l'équivalent d'un router sous Express (framework Node.js).
+<br/>
+<br/>
+
+On souhaite que toutes les opérations sur les ressources de type **Film** soient accessibles 
+via l'URI "**/films**".
+Pour ce faire :
+- Renommez la classe **MyResource** en **FilmResource** et sa méthode **getIt** en **getAll**.
+- Changez le **Path** annotant la classe **FilmResource** vers : 
+```java {1}
+@Path("films")
+public class FilmResource {
+```
+<br/>
+
+Ajoutez la classe **Film** au sein de votre projet :
+```java
+package be.vinci;
+
+public class Film {
+
+    private int id;
+    private String title;
+    private int duration;
+    private long budget;
+    private String link;
+
+    public Film() {
+    }
+
+    public Film(int id, String title, int duration, long budget, String link) {
+        this.id = id;
+        this.title = title;
+        this.duration = duration;
+        this.budget = budget;
+        this.link = link;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public int getDuration() {
+        return duration;
+    }
+
+    public void setDuration(int duration) {
+        this.duration = duration;
+    }
+
+    public long getBudget() {
+        return budget;
+    }
+
+    public void setBudget(long budget) {
+        this.budget = budget;
+    }
+
+    public String getLink() {
+        return link;
+    }
+
+    public void setLink(String link) {
+        this.link = link;
+    }
+
+    @Override
+    public String toString() {
+        return "Film [id=" + id + ", title=" + title + ", duration=" + duration + ", budget=" + budget + ", link="
+                + link + "]";
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Film film = (Film) o;
+
+        return id == film.id;
+    }
+
+    @Override
+    public int hashCode() {
+        return id;
+    }
+}
+```
+<br/>
+
+Dans **FilmResource**, utilisez ce code pour créer des films par défaut :
+```java
+private Film[] defaultFilms = {
+            new Film(1, "No Time To Die", 163, 301, "https://en.wikipedia.org/wiki/No_Time_to_Die"),
+            new Film(2, "Dune", 156, 165, "https://en.wikipedia.org/wiki/Dune_(2021_film)"),
+            new Film(3, "Shang-Chi and the Legend of the Ten Rings", 132, 200, "https://en.wikipedia.org/wiki/Shang-Chi_and_the_Legend_of_the_Ten_Rings"),
+            new Film(4, "Peter Rabbit 2: The Runaway", 93, 45, "https://en.wikipedia.org/wiki/Peter_Rabbit_2:_The_Runaway")
+    };
+private List<Film> films = new ArrayList<>(Arrays.asList(defaultFilms)); // to get a changeable list, asList is fixed size
+```
+<br/>
+
+Veuillez faire en sorte que la méthode **getAll** de **FilmResource** renvoie l'ArrayList de films 
+et spécifiez que la représentation des ressources renvoyées par votre méthode **getAll** est du JSON :
+```java
+@GET
+@Produces(MediaType.APPLICATION_JSON)
+    public List<Film> getAll() {
+```
+<br/>
+
+Une méthode annotée par **@GET** répondra aux requêtes **GET** sur la Root Resource.
+
+Que se passe-t-il si vous tentez d'accéder à une ressource non prise en charge par votre API ? 
+N'hésitez pas à essayer, par exemple : [http://localhost:8080/movies](http://localhost:8080/movies). 
+<br/>
+
+Pour répondre à des requêtes d'une certaine méthode http, on utilisera l'annotation associée : 
+par exemple, pour une requête POST, **@POST**…
+<br/>
+
+Testez la lecture des films...
+
+Que se passe-t-il ? « Request failed »...
+
+L'application n'est pas encore capable de sérialiser une ArrayList de films vers du JSON.
+<br/>
+
+## <a id="sectionC3"></a>c.3) Sérialisation via Jackson
+Nous allons utiliser un package Jackson pour qu'automatiquement le framework puisse sérialiser des objets
+JAVA, comme une ArrayList de films, vers du JSON.
+
+Pour ce faire, veuillez ajouter ajoutez une dépendance à Jackson :
+- Via IntelliJ, pour ajouter une dépendance : 
+  - cliquez au sein de votre fichier **/pom.xml** : **Alt + Insert** (macOS: ⌘ Command+N), **Dependency**
+  - tapez : **jersey-media-json-jackson**
+  - Installez les dépendances Maven en cliquant sur le bouton représentant "**Load Maven Changes**"
+- Si vous n'avez pas IntelliJ, vous pouvez simplement rajouter cela dans votre **pom.xml** :
+```markup
+<dependency>
+    <groupId>org.glassfish.jersey.media</groupId>
+    <artifactId>jersey-media-json-jackson</artifactId>
+</dependency>
+```
+<br/>
+
+Voila, si vous exécutez votre programme, la lecture des films devrait fonctionner 
+sur [http://localhost:8080/films](http://localhost:8080/films)
+<br/>
+
+NB : Pour cette version de Jersey, il n'est plus nécessaire d'enregistrer l'utilisation de Jackson au sein de l'application.
+Dans des versions plus ancienne, il fallait mettre à jour la classe **Main** :
+```java {2}
+ final ResourceConfig rc = new ResourceConfig().packages("be.vinci")
+                .register(JacksonFeature.class);
+```
+<br/>
+
+## c.4) Scope de l'injection d'une "Root Resource" au sein du framework
+### c.4.1) Scope par défaut
+Maintenant, nous allons cherchez à comprendre le scope de la Root Ressource créée par le framework.
+
+Pour ce faire, modifiez votre méthode **getAll** pour qu'elle essaie d'effacer toujours le dernier 
+élément du tableau avant de renvoyer tous les éléments restant du tableau.
+```java {3-4}
+@GET
+    @Produces(MediaType.APPLICATION_JSON)
+    public List<Film> getAll() {
+        if(films.size()>0)
+            films.remove(films.size()-1);
+        return films;
+    }
+```
+<br/>
+
+Appelez plusieurs fois votre API dans votre browser, en faisant plusieurs refresh sur 
+[http://localhost:8080/films](http://localhost:8080/films)
+
+Que se passe-t-il ?
+
+A chaque fois on repart avec le même tableau par défaut de ressources, on a toujours qu'un seul élément en moins.
+On ne peut donc pas effacer plus d'un élément.
+<br/>
+
+**Conclusion** : 
+
+Par défaut, une nouvelle instance d'une Route Resource sera créée pour chaque requête matchant l'URI de la Root Resource. 
+C'est comme si la Root Resource avait été annotée par **@RequestScoped**.
+Dans une application RESTful, cela n'a pas de sens car elle est "stateless". Dès lors, comme la réponse à une requête 
+ne dépend pas de l'état de la ressource, il est inutile de créer une nouvelle instance de ressource pour chaque requête.
+<br/>
+
+Si vous souhaitez plus de détails concernant le cycle de vie de Root Resources : https://eclipse-ee4j.github.io/jersey.github.io/documentation/latest31x/jaxrs-resources.html#d0e2536
+<br/>
+
+### c.4.2) Scope : une instance par application JAX-RS
+
+Nous allons modifier le scope de la création en ajoutant l'annotation **@Singleton** dans **FilmResource** :
+```java {1}
+@Singleton
+@Path("films")
+public class FilmResource {
+```
+<br/>
+
+Suite à ce changement, vérifiez ce qui se produit au niveau de l'application.
+
+On a bien une seule instance de **FilmResource** qui est injectée dans notre application.
+Dès lors, à chaque refresh de la page, un film est enlevé, jusqu'à ce que l'API renvoie comme JSON un tableau vide.
+<br/>
+
+Avant de passer au point suivant, nous allons  remettre en ordre la fonction permettant de lire tous les films 
+(elle ne doit plus effacer de films).
+```java
+@GET
+@Produces(MediaType.APPLICATION_JSON)
+public List<Film> getAll() {
+    return films;
+}
+```
+<br/>
+
+# <a id="sectionD"></a>d) Gestion des paramètres de requêtes
+## d.1) Paramètres d'URI via @Path et codes d'erreur
+Il est possible d'intégrer des variables dans des URIs.
+
+Une variable est délimitée par des « **{}** » au sein de l'URI. 
+
+On utilise **@PathParam** pour extraire un paramètre du chemin d'une URI.
+<br/>
+
+Pour l'API de gestion de films, nous allons maintenant développer l'opération de lecture d'un 
+film sur base de son id.
+
+Ajoutez cette nouvelle méthode au sein de **FilmResource** : 
+```java {1,3-4,7-8}
+@GET
+@Path("/{id}")
+@Produces(MediaType.APPLICATION_JSON)
+public Film getOne(@PathParam("id") int id) {
+        Film filmFound = films.stream().filter(film -> film.getId() == id).findAny().orElse(null);
+        if (filmFound == null)
+            throw new WebApplicationException(Response.status(Response.Status.NOT_FOUND)
+                    .entity("Ressource not found").type("text/plain").build());
+        return filmFound;
+    }
+```
+<br/>
+
+Si vous tapez [http://localhost:8080/films/3](http://localhost:8080/films/3) dans votre browser,
+cela correspond à une requête de type **GET /films/3**. Au sein de la méthode **getOne**, le paramètre 
+**id** vaudra 3.
+<br/>
+
+Veuillez noter comment un message de statut est renvoyé au client si aucune resource n'est trouvée.
+
+Nous lançons une **WebApplicationException**, en lui passant un code d'erreur (**NOT_FOUND**), et 
+nous construisons une réponse en indiquant que le type est du texte (**text/plain**).
+Dès lors, la réponse contiendra le code de statut **404** (équivalent de **NOT_FOUND**) et le message 
+"Resource not found".
+<br/>
+
+Veuillez tester la lecture d'une ressource qui n'existe pas, par exemple via 
+[http://localhost:8080/films/5](http://localhost:8080/films/5).
+<br/>
+
+## d.2) Paramètres de requête via @QueryParam
+Lors d'une requête par un client, il est possible de passer des paramètres de requête via l'URL :
+**?key1=value1&key2=value2**. 
+Ces paramètres se trouvent après le **?** dans l'URL, sous forme de paires **clé/valeur**.
+Quand il y a plusieurs paramètres, ils sont séparés par un **&**.
+<br/>
+
+Grâce à Jersey, on récupère ces paramètres au sein de nos APIs via **@QueryParam**.
+
+Nous allons maintenant offrir la possibilité de lire tous les films qui ont une durée minimum 
+à ce qui sera indiqué dans un paramètre de requête, sur base d'une requête de type 
+**GET /films?minimum-duration=value**.
+
+Pour ce faire, nous ne devons pas créer de nouvelle méthode au sein de **FilmResource** mais 
+nous devons mettre à jour la méthode renvoyant tous les films :
+```java {3-8}
+@GET
+@Produces(MediaType.APPLICATION_JSON)
+public List<Film> getAll(@DefaultValue("-1") @QueryParam("minimum-duration") int minimumDuration) {
+    if (minimumDuration != -1) {
+        List<Film> filmsFiltered = films.stream().filter(film -> film.getDuration() >= minimumDuration)
+                .toList();
+        return filmsFiltered;
+    }
+    return films;
+}
+```
+<br/>
+
+On récupère le paramètre d'une requête GET nommé **minimum-duration** au sein de **minimumDuration**.
+
+Par exemple, pour la requête [http://localhost:8080/films?minimum-duration=160](http://localhost:8080/films?minimum-duration=160), 
+**minimumDuration** de **getAll** vaut **160**.
+
+Pour une requête de type **GET /films**, si **minimum-duration** n'est pas indiqué dans l'URL, 
+le paramètre **minimumDuration** de **getAll** vaudra **-1** grâce à **@DefaultValue("-1")**.
+<br/>
+
+## d.3) Données JSON dans le body de la requête
+### d.3.1 ) Désérialisation de JSON
+Nous allons souvent souhaiter récupérer des données qui ont été envoyées au format JSON sein 
+du body d'une requête client. Quand c'est le cas, le framework doit pouvoir automatiquement 
+désérialiser (ou parser) ces données JSON. En d'autres termes, le framework doit pouvoir injecter 
+les données JSON dans un objet Java.
+<br/>
+
+Pour ce faire, notre application JAX-RS a déjà été correctement configurée pour pouvoir 
+sérialiser / désérialiser des données JSON à l'aide de Jackson (voir [c.3) Sérialisation via Jackson](/modules/1#sectionC3))
+<br/>
+
+Nous allons développer l'opération de création d'un film au sein de notre application JAX-RS.
+Pour appeler cette opération, il faudra faire une requête client de ce type :
+```json
+POST http://localhost:8080/films 
+Content-Type: application/json
+
+{
+"title" : "Venom: Let There Be Carnage",
+"duration" : 97,
+"budget" : 110,
+"link" : "https://en.wikipedia.org/wiki/Venom:_Let_There_Be_Carnage"
+} 
+```
+<br/>
+
+Veuillez ajouter la fonction **createOne** au sein de **FilmResource** :
+```java {1,3,4}
+@POST
+@Produces(MediaType.APPLICATION_JSON)
+@Consumes(MediaType.APPLICATION_JSON)
+public Film createOne(Film film) {
+    if (film == null || film.getTitle() == null || film.getTitle().isBlank())
+        throw new WebApplicationException(
+                Response.status(Response.Status.BAD_REQUEST).entity("Lacks of mandatory info").type("text/plain").build());
+    film.setId(films.size() + 1);
+    films.add(film);
+    return film;
+}
+```
+<br/>
+
+Pour que le JSON de la requête POST puisse être directement parsé au sein du paramètre **film**, 
+il faut avoir créé le POJO **Film**, une classe qui contient tous les getters et setters associés 
+aux attributs d'une ressource de type **Film**. 
+
+Par défaut, Jackson désérialise tous les champs **public**. Pour les champs non public, il désérialise par défaut
+tous les champs qui ont un setter.
+
+Attention, pour la désérialisation via Jackson, il doit exister un constructeur 
+par défaut (sans paramètres) au sein de votre POJO.
+C'est pour ça qu'il existe ce constructeur dans la classe **Film** :
+```java
+public Film() {
+    }
+```
+<br/>
+
+La requête pour pouvoir appeler l'opération de création d'un film est donnée ici : 
+[f) Envoi de requêtes à ses APIs](/modules/1#sectionF).
+<br/>
+
+Plus d'infos sur la désérialisation via Jackson : 
+
+https://www.baeldung.com/jackson-field-serializable-deserializable-or-not
+<br/>
+<br/>
+
+### d.3.2) Type MIME de la requête et @Consumes 
+Afin de permettre la désérialisation par le framework, on doit préciser le type **MIME** de la représentation de la ressource qui est envoyée dans 
+le **body** de la requête : 
+
+**@Consumes(MediaType.APPLICATION_JSON)**, **@Consumes("text/plain")**, …
+<br/>
+
+# <a id="sectionE"></a>e) Gestion des réponses
+## e.1) Réponses & sérialisation en JSON de POJOs
+Voici en résumé ce que nous avons déjà vu. 
+
+Pour renvoyer un objet du monde Java sous une représention JSON à un client :
+- il faut avoir créé un JavaBean, un POJO comprenant tous les getters associés aux attributs 
+de la ressource à renvoyer : c'est le rôle de la classe **Film**.
+- il faut indiquer le type de la représentation de la ressource renvoyée via **@Produces** : 
+c'est le rôle de **@Produces(MediaType.APPLICATION_JSON))** pour renvoyer du JSON.
+- Si l'on souhaite renvoyer un tableau d'objets JSON au client, il suffit de renvoyer 
+une liste de POJOs via le framework : c'est le rôle du type de retour **`List<Film>`** de la méthode **getAll**.
+
+<br/>
+
+De plus, le code http de statut renvoyé, associé à la réponse,
+correspond au code 200 quand tout se passe bien (**Status.OK**).
+<br/>
+
+## e.2) Type MIME de la réponse et @Produces
+On précisera le type MIME de la ressource qui sera renvoyé au client via soit : 
+**@Produces(MediaType.APPLICATION_JSON)**, **@Produces("text/plain")**, **@Produces("text/html")**…
+<br/>
+
+## e.3) Code http à renvoyer
+On ne peut pas toujours renvoyer du JSON suite à une requête client ainsi qu'un code 
+http correspondant au fait que tout est OK (code 200, **Status.OK**).
+<br/>
+
+Dans le cadre d'une RESTful API, comme on renvoie généralement des ressources au format JSON, 
+la réponse est très souvent construite par Jersey et Jackson automatiquement. 
+Dès lors, si l'on souhaite envoyer autre chose en retour qu'un POJO qui doit être sérialisé, 
+comme un code d'erreur, il va falloir utiliser une méthode du framework court-circuitant 
+le processus de sérialisation.
+<br/>
+
+Pour renvoyer des codes d'erreur, nous l'avons déjà apperçu précédemment, 
+nous allons  utiliser le framework pour lancer une **WebApplicationException**. 
+Cette exception sera utilisée pour construire la réponse à renvoyer 
+au client. Une **WebApplicationException** reprendra tant le « http status code » 
+qu'éventuellement un message d'erreur de type **text/plain** dans le corps de la réponse.
+
+Afin de voir de nouveaux exemple de code d'erreur, nous allons développer les opérations pour 
+effacer et mettre à jour un film. Veuillez ajouter ces deux méthodes au sein de **FilmResource** :
+```java numbered {6-7,10-11,22-23,26-27}
+@DELETE
+@Path("/{id}")
+@Produces(MediaType.APPLICATION_JSON)
+public Film deleteOne(@PathParam("id") int id) {
+    if (id == 0) // default value of an integer => has not been initialized
+        throw new WebApplicationException(Response.status(Response.Status.BAD_REQUEST).entity("Lacks of mandatory id info")
+                .type("text/plain").build());
+    Film filmToDelete = films.stream().filter(film -> film.getId() == id).findAny().orElse(null);
+    if (filmToDelete == null)
+        throw new WebApplicationException(Response.status(Response.Status.NOT_FOUND)
+                .entity("Ressource not found").type("text/plain").build());
+    films.remove(filmToDelete);
+    return filmToDelete;
+}
+
+@PUT
+@Path("/{id}")
+@Produces(MediaType.APPLICATION_JSON)
+@Consumes(MediaType.APPLICATION_JSON)
+public Film updateOne(Film film, @PathParam("id") int id) {
+    if (id == 0 || film == null || film.getTitle() == null || film.getTitle().isBlank())
+        throw new WebApplicationException(
+                Response.status(Response.Status.BAD_REQUEST).entity("Lacks of mandatory info").type("text/plain").build());
+    Film filmToUpdate = films.stream().filter(f -> f.getId() == id).findAny().orElse(null);
+    if (filmToUpdate == null)
+        throw new WebApplicationException(Response.status(Response.Status.NOT_FOUND)
+                .entity("Ressource not found").type("text/plain").build());
+    film.setId(id);
+    films.remove(film); // thanks to equals(), films is found via its id
+    films.add(film);
+    return film;
+}
+```
+<br/>
+
+Pour une liste des codes http, vous pouvez consulter : 
+https://developer.mozilla.org/en-US/docs/Web/HTTP/Status
+<br/>
+
+La classes **jakarta.ws.rs.core.Response.Status** donne accès à tous les codes de retour : 
+**Response.Status.NOT_FOUND**, **Response.Status.BAD_REQUEST**…
+<br/>
+
+# <a id="sectionF"></a>f) Envoi des requêtes à son API
+## f.1) Test de son API
+Dans le cadre de ce cours, vous ne devez pas développer de frontend (par exemple en HTML / 
+JavaScript / CSS) pour tester vos APIs. Cela prendrait trop de temps. 
+
+Nous allons donc utiliser des clients légers permettant de faire des requêtes à nos APIs.
+
+Pour ce cours, vous pouvez choisir d'utiliser IntelliJ ou REST Client pour faire vos requêtes.
+
+Comme nous vous encourageons à utiliser IntelliJ pour développer votre code Java, il est probablement 
+plus aisé de rester au sein du même environnement de développement en utilisant le client HTTP 
+d'IntelliJ.
+<br/>
+
+## f.2) HTTP Client d'IntelliJ
+Dans le cadre de cours, si vous programmez sous IntelliJ, nous vous recommandons d'utiliser son client HTTP pour faire vos requêtes vers vos API Rest.
+En 2023, HTTP Client a évolué et on peut l'utiliser comme Rest Client, la syntaxe est la même pour ce que l'on souhaite faire dans ce module.
+<br/>
+
+Quelques notions pour vos requêtes HTTP :
+- Il faut créer un fichier **.http** contenant les requêtes vers vos RESTful APIs.
+<br/>NB : Il est approprié de créer un fichier par Root Resource (par type de ressources).
+- Chaque requête est introduite par **###** (3 "**#**"" ou plus)
+- Pour exécuter une requête, il suffit de cliquer sur **Send Request**
+- Lorsqu'on envoie des données au format JSON, il est important d'avoir un espace, une ligne vide,
+avant les accolades (avant le "**&#123;**" )
+- On peut définir des "**File variables**" via ce genre de syntaxe : **@baseUrl = http://localhost:8080/films**
+<br/>
+- Pour utiliser la variable **baseUrl**, il suffit de la mettre entre double accolades. Par exemple, voici 
+la requête permettant de lire tous les films :
+
+```json
+### Read All films
+GET {{baseUrl}}/films
+```
+<br/>
+
+Nous allons maintenant tester l'API de gestion de films que nous avons créée pour tout ce que nous ne pouvons pas tester directement via un browser.
+<br/>
+
+Veuillez créer un fichier **films.http** dans un dossier au sein de votre projet (ou de votre module IntelliJ). Ce dossier pourrait s'appeler **requests** par exemple.
+
+Veuillez y ajouter cette requête pour la création d'un film et l'exécuter :
+```json
+@baseUrl = http://localhost:8080
+### Create One film
+POST {{baseUrl}}/films 
+Content-Type: application/json
+
+{
+"title" : "Venom: Let There Be Carnage",
+"duration" : 97,
+"budget" : 110,
+"link" : "https://en.wikipedia.org/wiki/Venom:_Let_There_Be_Carnage"
+} 
+```
+<br/>
+
+Veuillez ajouter cette requête de suppression d'un film dans **films.http** et l'exécuter :
+```json
+DELETE {{baseUrl}}/films/5
+```
+<br/>
+
+Veuillez ajouter cette requête de suppression d'un film dans **films.http** et l'exécuter :
+```json
+### Update One film
+PUT {{baseUrl}}/films/4
+Content-Type: application/json
+
+{
+"title" : "Venom: Let There Be Carnage",
+"duration" : 97,
+"budget" : 110,
+"link" : "https://en.wikipedia.org/wiki/Venom:_Let_There_Be_Carnage"
+} 
+```
+<br/>
+
+Si vous souhaitez en savoir plus sur Http Client d'IntelliJ, vous pouvez consulter : https://www.jetbrains.com/help/idea/http-client-in-product-code-editor.html
+<br/>
+
+Sachez que malheureusement Http Client est disponible que sur la version "Ultimate" d'IntelliJ ; la version "Community" ne permet pas d'utiliser Http Client 😱.
+<br/>
+
+## f.3) REST Client sous VS Code
+Dans le cadre de ce cours, nous pouvons aussi utiliser REST Client de Visual Studio Code pour tester nos APIs : 
+https://github.com/Huachao/vscode-restclient
+
+<br/>
+L'utilisation de Rest Client est la même que pour HTTP Client d'IntelliJ.
+<br/>
+<br/>
+
+## f.4) Ancien HTTP Client d'IntelliJ
+Si vous pratiquez sur une machine de l'école qui ne possède pas encore la nouvelle version d'IntelliJ et de HTTP Client, vous trouverez ici les instructions pour utiliser l'ancienne version d'HTTP Client.
+<br/>
+
+Quelques notions pour vos requêtes HTTP :
+- Il faut créer un fichier **.http** contenant les requêtes vers vos RESTful APIs.
+<br/>NB : Il est approprié de créer un fichier par Root Resource (par type de ressources).
+- Chaque requête est introduite par **###** (3 "**#**"" ou plus).
+- Pour exécuter une requête, il suffit de cliquer sur **Run HTTP Request** (le triangle vert à gauche dans votre éditeur de code).
+- Lorsqu'on envoie des données au format JSON, il est important d'avoir un espace avant les accolades (avant le "**&#123;**" ).
+- On peut définir des variables d'environnement dans un "**Environment file**". Il suffit de cliquer à côté de **Run with:** sur **Add Environment to Public File...** (ou sur **Add new environment file** dans la console) pour créer un fichier **http-client.env.json** dans lequel vous pouvez ajouter vos variables.
+Voici à quoi ressemble une variable **baseUrl** dans **http-client.env.json** : 
+```json
+{
+  "dev": {
+    "baseUrl": "http://localhost:8080"
+  }
+}
+```
+
+- Pour lier votre fichier d'environnement avec votre fichier de requêtes, pour **Run with:**, vous devez sélectionner **dev**.
+- Pour utiliser la variable **baseUrl**, il suffit de la mettre entre double accolades.  
+Par exemple, voici la requête permettant de lire tous les films :
+
+```json
+### Read All films
+GET {{baseUrl}}/films
+```
+<br/>
+
+Nous allons maintenant tester l'API de gestion de films que nous avons créée pour tout ce que nous ne pouvons pas tester directement via un browser.
+<br/>
+
+Veuillez créer un fichier **films.http** dans un dossier au sein de votre projet (ou de votre module IntelliJ). Ce dossier pourrait s'appeler **requests** par exemple.
+
+Veuillez y ajouter cette requête pour la création d'un film et l'exécuter :
+```json
+### Create One film
+POST {{baseUrl}}/films 
+Content-Type: application/json
+
+{
+"title" : "Venom: Let There Be Carnage",
+"duration" : 97,
+"budget" : 110,
+"link" : "https://en.wikipedia.org/wiki/Venom:_Let_There_Be_Carnage"
+} 
+```
+<br/>
+
+Veuillez ajouter cette requête de suppression d'un film dans **films.http** et l'exécuter :
+```json
+DELETE {{baseUrl}}/films/5
+```
+<br/>
+
+Veuillez ajouter cette requête de suppression d'un film dans **films.http** et l'exécuter :
+```json
+### Update One film
+PUT {{baseUrl}}/films/4
+Content-Type: application/json
+
+{
+"title" : "Venom: Let There Be Carnage",
+"duration" : 97,
+"budget" : 110,
+"link" : "https://en.wikipedia.org/wiki/Venom:_Let_There_Be_Carnage"
+} 
+```
+<br/>
+
+# <a id="sectionG"></a>g) Sérialisation de fichiers JSON
+## g.1) Introduction
+L'utilisation de Jackson est documentée, mais celle-ci semble fort dispersée sur le Web.
+Nous avons donc résumé les concepts essentiels ci-dessous. 
+
+Pour ce cours, nous souhaitons que nos ressources soient persistantes, mais sans utiliser de 
+système de gestion de base de données. Nous allons donc sauvegarder les données dans un fichier JSON.
+<br/>
+
+Pour chaque opération sur un type de ressources : 
+- Nous allons charger toutes les ressources se trouvant dans un fichier JSON au sein d'un objet Java, 
+une liste d'objets de type **Film** par exemple.
+- Si nécessaire, dans le cadre d'une opération d'écriture sur une ou plusieurs ressources, 
+nous allons mettre à jour la liste d'objets Java (ou POJOs).
+- Si nous avons réalisé une opération d'écriture, nous allons faire persister ces changements en 
+sauvegardant la liste d'Objets Java dans un fichier JSON. On écrase donc le fichier JSON à chaque 
+opération d'écriture.
+<br/>
+<br/>
+
+Pour rappel, notre application JAX-RS a déjà été correctement configurée pour pouvoir 
+sérialiser / désérialiser des données JSON à l'aide de Jackson
+ (voir [c.3) Sérialisation via Jackson](/modules/1#sectionC3)).
+<br/>
+
+<br/>
+
+Voici quelques références malgré tout pour la documentation, si vous souhaitez approfondir :
+-	Tutoriel reprenant les fonctions principales de Jackson : https://www.baeldung.com/jackson-object-mapper-tutorial 
+-	Le point d'entrée de Jackson au sein de Jersey : https://eclipse-ee4j.github.io/jersey.github.io/documentation/latest31x/media.html#json.jackson
+-	Pour une idée de base de la libraire Jackson : https://github.com/FasterXML/jackson-docs ou https://github.com/FasterXML/jackson-databind 
+
+<br/>
+
+## g.2) Sérialisation d'une liste de POJOs dans un fichier JSON
+
+Pour rendre les ressources persistantes au sein de notre API de gestion de films, veuillez créer 
+une nouvelle classe s'appelant **Json**.
+
+Au sein de la classe **Json**, voici le code de la méthode **serialize** permettant d'utiliser
+le fichier **db.json** pour sérialiser (ou enregistrer) plusieurs types de ressources. Veuillez 
+bien lire les commentaires pour comprendre le code :
+```java
+package be.vinci;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
+
+public class Json {
+    private static final String DB_FILE_PATH = "db.json";
+    private static Path pathToDb = Paths.get(DB_FILE_PATH);
+    private static final String COLLECTION_NAME = "films";
+    private final static ObjectMapper jsonMapper = new ObjectMapper();
+
+    public static void serialize(List<Film> films) {
+        try {
+            // if no DB file, write a new collection to a new db file
+            if (!Files.exists(pathToDb)) {
+                // Create an object and add a JSON array as POJO, e.g. { films:[...]}
+                ObjectNode newCollection = jsonMapper.createObjectNode().putPOJO(COLLECTION_NAME, films);
+                jsonMapper.writeValue(pathToDb.toFile(), newCollection); // write the JSON Object in the DB file
+                return;
+            }
+            // get all collections : can be read as generic JsonNode, if it can be Object or Array;
+            JsonNode allCollections = jsonMapper.readTree(pathToDb.toFile()); // e.g. { users:[...], films:[...]}
+            // remove current collection, e.g. remove the array of films
+            if (allCollections.has(COLLECTION_NAME)) {
+                ((ObjectNode) allCollections).remove(COLLECTION_NAME); //e.g. it leaves { users:[...]}
+            }
+            // Prepare a JSON array from the list of POJOs for the collection to be updated, e.g. [{"film1",...}, ...]
+            ArrayNode updatedCollection = jsonMapper.valueToTree(films);
+            // Add the JSON array in allCollections, e.g. : { users:[...], films:[...]}
+            ((ObjectNode) allCollections).putArray(COLLECTION_NAME).addAll(updatedCollection);
+            // write to the db file allCollections
+            jsonMapper.writeValue(pathToDb.toFile(), allCollections);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+}
+```
+<br/>
+
+## g.2) Parsing d'un fichier JSON vers une liste de POJOs
+Dans un 1er temps, on va créer un **JSON Node** sur base d'un fichier JSON et la méthode **readTree**.
+Puis nous pouvons utiliser un **Reader** pour charger une liste de POJOs à partir du **JSON Node**.
+
+Au sein de la classe **Json**, veuillez rajouter le code de la méthode **parse** permettant de 
+charger une liste de ressources :
+```java
+public static List<Film> parse() {
+    try {
+        // get allCollections
+        JsonNode node = jsonMapper.readTree(pathToDb.toFile());
+        // accessing value of the specified field of an object node,
+        // e.g. the JSON array within "films" field of { users:[...], films:[...]}
+        JsonNode collection = node.get(COLLECTION_NAME);
+        if (collection == null) // Send an empty list if there is not the requested collection
+            return new ArrayList<Film>();
+        // convert the JsonNode to a List of POJOs & return it
+        return jsonMapper.readerForListOf(Film.class).readValue(collection);
+    } catch (FileNotFoundException e) {
+        return new ArrayList<Film>(); // send an empty list if there is no db file
+    } catch (IOException e) {
+        e.printStackTrace();
+        return new ArrayList<Film>();
+    }
+}
+```
+<br/>
+
+Il faut maintenant mettre à jour **FilmResource** afin d'utiliser les méthodes **serialize** et 
+**parse** pour faire persister les ressources :
+```java numbered {7,20,35,38,49,55,67,75}
+@Singleton
+@Path("films")
+public class FilmResource {
+@GET
+@Produces(MediaType.APPLICATION_JSON)
+public List<Film> getAll(@DefaultValue("-1") @QueryParam("minimum-duration") int minimumDuration) {
+    var films = Json.parse();
+    if (minimumDuration != -1) {
+        List<Film> filmsFiltered = films.stream().filter(film -> film.getDuration() >= minimumDuration)
+                .toList();
+        return filmsFiltered;
+    }
+    return films;
+}
+
+@GET
+@Path("/{id}")
+@Produces(MediaType.APPLICATION_JSON)
+public Film getOne(@PathParam("id") int id) {
+    var films = Json.parse();
+    Film filmFound = films.stream().filter(film -> film.getId() == id).findAny().orElse(null);
+    if (filmFound == null)
+        throw new WebApplicationException(Response.status(Response.Status.NOT_FOUND)
+                .entity("Ressource not found").type("text/plain").build());
+    return filmFound;
+}
+
+@POST
+@Produces(MediaType.APPLICATION_JSON)
+@Consumes(MediaType.APPLICATION_JSON)
+public Film createOne(Film film) {
+    if (film == null || film.getTitle() == null || film.getTitle().isBlank())
+        throw new WebApplicationException(
+                Response.status(Response.Status.BAD_REQUEST).entity("Lacks of mandatory info").type("text/plain").build());
+    var films = Json.parse();
+    film.setId(films.size() + 1);
+    films.add(film);
+    Json.serialize(films);
+    return film;
+}
+
+@DELETE
+@Path("/{id}")
+@Produces(MediaType.APPLICATION_JSON)
+public Film deleteOne(@PathParam("id") int id) {
+    if (id == 0) // default value of an integer => has not been initialized
+        throw new WebApplicationException(Response.status(Response.Status.BAD_REQUEST).entity("Lacks of mandatory id info")
+                .type("text/plain").build());
+    var films = Json.parse();
+    Film filmToDelete = films.stream().filter(film -> film.getId() == id).findAny().orElse(null);
+    if (filmToDelete == null)
+        throw new WebApplicationException(Response.status(Response.Status.NOT_FOUND)
+                .entity("Ressource not found").type("text/plain").build());
+    films.remove(filmToDelete);
+    Json.serialize(films);
+    return filmToDelete;
+}
+
+@PUT
+@Path("/{id}")
+@Produces(MediaType.APPLICATION_JSON)
+@Consumes(MediaType.APPLICATION_JSON)
+public Film updateOne(Film film, @PathParam("id") int id) {
+    if (id == 0 || film == null || film.getTitle() == null || film.getTitle().isBlank())
+        throw new WebApplicationException(
+                Response.status(Response.Status.BAD_REQUEST).entity("Lacks of mandatory info").type("text/plain").build());
+    var films = Json.parse();
+    Film filmToUpdate = films.stream().filter(f -> f.getId() == id).findAny().orElse(null);
+    if (filmToUpdate == null)
+        throw new WebApplicationException(Response.status(Response.Status.NOT_FOUND)
+                .entity("Ressource not found").type("text/plain").build());
+    film.setId(id);
+    films.remove(film); // thanks to equals(), films is found via its id
+    films.add(film);
+    Json.serialize(films);
+    return film;
+}
+}
+```
+<br/>
+
+
+# <a id="sectionH"></a>h) Gestion des caractères dangereux
+Afin de se protéger des attaques XSS (Cross Site Scripting), il faudra éviter de renvoyer 
+du code JavaScript qui pourrait s'exécuter dans le browser des clients.
+
+Pour ce faire, dans le cadre de ce cours, nous vous proposons, lors de l'enregistrement de 
+données qui pourraient être renvoyées aux clients, d'échapper les caractères 
+potentiellement dangereux.
+
+Nous utiliserons la librairie **commons-text** d'Apache, mettant notamment à disposition 
+la méthode **escapeHtml4**. 
+<br/>
+
+Dans le cadre de votre API de gestion de films, veuillez installer la dépendance **commons-text** :
+- Via IntelliJ : 
+  - cliquez au sein de votre fichier **/pom.xml** : **Code**, **Generate...**, **Add dependency...**
+  - tapez : **commons-text** et sélectionner **org.apache.commons:commons-text**
+  - Installez les dépendances Maven en cliquant sur le bouton représentant "**Load Maven Changes**"
+- Si vous n'avez pas IntelliJ, ajoutez cela au sein de **/pom.xml**, puis forcer l'installation des dépendances :
+```markup
+<dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-text</artifactId>
+            <version>1.11.0</version>
+</dependency>
+```
+<br/>
+
+Mettez à jour **FilmResource** afin d'échapper les caractères dangereux lors des opérations d'écriture :
+```java {10-11,31-32}
+@POST
+@Produces(MediaType.APPLICATION_JSON)
+@Consumes(MediaType.APPLICATION_JSON)
+public Film createOne(Film film) {
+    if (film == null || film.getTitle() == null || film.getTitle().isBlank())
+        throw new WebApplicationException(
+                Response.status(Response.Status.BAD_REQUEST).entity("Lacks of mandatory info").type("text/plain").build());
+    var films = Json.parse();
+    film.setId(films.size() + 1);
+    film.setTitle(StringEscapeUtils.escapeHtml4(film.getTitle()));
+    film.setLink(StringEscapeUtils.escapeHtml4(film.getLink()));
+    films.add(film);
+    Json.serialize(films);
+    return film;
+}
+
+@PUT
+@Path("/{id}")
+@Produces(MediaType.APPLICATION_JSON)
+@Consumes(MediaType.APPLICATION_JSON)
+public Film updateOne(Film film, @PathParam("id") int id) {
+    if (id == 0 || film == null || film.getTitle() == null || film.getTitle().isBlank())
+        throw new WebApplicationException(
+                Response.status(Response.Status.BAD_REQUEST).entity("Lacks of mandatory info").type("text/plain").build());
+    var films = Json.parse();
+    Film filmToUpdate = films.stream().filter(f -> f.getId() == id).findAny().orElse(null);
+    if (filmToUpdate == null)
+        throw new WebApplicationException(Response.status(Response.Status.NOT_FOUND)
+                .entity("Ressource not found").type("text/plain").build());
+    film.setId(id);
+    film.setTitle(StringEscapeUtils.escapeHtml4(film.getTitle()));
+    film.setLink(StringEscapeUtils.escapeHtml4(film.getLink()));
+    films.remove(film); // thanks to equals(), films is found via its id
+    films.add(film);
+    Json.serialize(films);
+    return film;
+}
+```
+<br/>
+
+
+Le manuel utilisateur de cette librairie est disponible ici : https://commons.apache.org/proper/commons-text/userguide.html
+
+<br/>
+
+**Code du tutoriel** : si vous souhaitez directement accéder au code de la fin du tutoriel de 
+création d'une API de gestion de films pour ce module 1 : 
+https://github.com/e-vinci/baja-demos/tree/main/films-api-tutorial1
+
+<br/>
+
+# <a id="sectionI"></a>i) Exercice 1.1
+Veuillez créer une application JAX-RS mettant à disposition des opérations CRUD 
+(**C**reate, **R**ead, **U**pdate & **D**elete) sur des ressources de type « texte à dactylographier ».
+
+Les ressources doivent persister au format JSON et vous devez échapper les caractères dangereux.
+<br/>
+
+Veuillez partir d'un archetype Maven comme décrit au point 
+[b) Creation d'une première application sur base d'un Archetype Maven](/modules/1#sectionB).
+<br/>
+
+Un texte à dactylographier contient comme attributs : 
+- **id**, un entier ;
+- **content**, un contenu textuel ;
+- **level**, le niveau associé au texte. Les seules valeurs autorisées sont : 
+« **easy** », « **medium** » et « **hard** ».
+
+<br/>
+
+Voici le tableau formalisant toutes les opérations associées à votre RESTful API que vous 
+devez implémenter :
+<br/>
+
+| URI |	Méthode |	Méthode |
+|-----|---------|-----------|
+| **texts**	| GET |	READ ALL : Lire toutes les ressources de la collection |
+| **texts?level=value**	| GET |	READ ALL FILTERED : Lire toutes les ressources de la collection selon le filtre donné |
+| **texts/{id}** | GET | READ ONE : Lire la ressource identifiée |
+| **texts**	| POST	| CREATE ONE : Créer une ressource basée sur les données de la requête |
+| **texts/{id}** |	DELETE	| DELETE ONE : Effacer la ressource identifiée |
+| **texts/{id}** |	PUT	| UPDATE ONE : Remplacer l'entièreté de la ressource par les données de la requête |
+
+<br/>
+
+Si lors d'une demande d'ajout ou de modification d'un texte à dactylographier la valeur 
+de **level** ne correspond pas à une valeur autorisée, veuillez renvoyer un code d'erreur 
+ainsi que le message d'erreur suivant : « Lacks of mandatory info or unauthorized text level ».
+<br/>
+
+Veuillez tester toutes les méthodes offertes par votre application JAX-RS à l'aide du client HTTP d'IntelliJ ou de REST Client (VS Code).
