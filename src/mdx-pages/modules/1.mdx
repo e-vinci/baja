@@ -740,6 +740,77 @@ L'utilisation de Rest Client est la même que pour HTTP Client d'IntelliJ.
 <br/>
 <br/>
 
+## f.4) Ancien HTTP Client d'IntelliJ
+Si vous pratiquez sur une machine de l'école qui ne possède pas encore la nouvelle version d'IntelliJ et de HTTP Client, vous trouverez ici les instructions pour utiliser l'ancienne version d'HTTP Client.
+<br/>
+
+Quelques notions pour vos requêtes HTTP :
+- Il faut créer un fichier **.http** contenant les requêtes vers vos RESTful APIs.
+<br/>NB : Il est approprié de créer un fichier par Root Resource (par type de ressources).
+- Chaque requête est introduite par **###** (3 "**#**"" ou plus).
+- Pour exécuter une requête, il suffit de cliquer sur **Run HTTP Request** (le triangle vert à gauche dans votre éditeur de code).
+- Lorsqu'on envoie des données au format JSON, il est important d'avoir un espace avant les accolades (avant le "**&#123;**" ).
+- On peut définir des variables d'environnement dans un "**Environment file**". Il suffit de cliquer à côté de **Run with:** sur **Add Environment to Public File...** (ou sur **Add new environment file** dans la console) pour créer un fichier **http-client.env.json** dans lequel vous pouvez ajouter vos variables.
+Voici à quoi ressemble une variable **baseUrl** dans **http-client.env.json** : 
+```json
+{
+  "dev": {
+    "baseUrl": "http://localhost:8080"
+  }
+}
+```
+
+- Pour lier votre fichier d'environnement avec votre fichier de requêtes, pour **Run with:**, vous devez sélectionner **dev**.
+- Pour utiliser la variable **baseUrl**, il suffit de la mettre entre double accolades.  
+Par exemple, voici la requête permettant de lire tous les films :
+
+```json
+### Read All films
+GET {{baseUrl}}/films
+```
+<br/>
+
+Nous allons maintenant tester l'API de gestion de films que nous avons créée pour tout ce que nous ne pouvons pas tester directement via un browser.
+<br/>
+
+Veuillez créer un fichier **films.http** dans un dossier au sein de votre projet (ou de votre module IntelliJ). Ce dossier pourrait s'appeler **requests** par exemple.
+
+Veuillez y ajouter cette requête pour la création d'un film et l'exécuter :
+```json
+### Create One film
+POST {{baseUrl}}/films 
+Content-Type: application/json
+
+{
+"title" : "Venom: Let There Be Carnage",
+"duration" : 97,
+"budget" : 110,
+"link" : "https://en.wikipedia.org/wiki/Venom:_Let_There_Be_Carnage"
+} 
+```
+<br/>
+
+Veuillez ajouter cette requête de suppression d'un film dans **films.http** et l'exécuter :
+```json
+DELETE {{baseUrl}}/films/5
+```
+<br/>
+
+Veuillez ajouter cette requête de suppression d'un film dans **films.http** et l'exécuter :
+```json
+### Update One film
+PUT {{baseUrl}}/films/4
+Content-Type: application/json
+
+{
+"title" : "Venom: Let There Be Carnage",
+"duration" : 97,
+"budget" : 110,
+"link" : "https://en.wikipedia.org/wiki/Venom:_Let_There_Be_Carnage"
+} 
+```
+<br/>
+
 # <a id="sectionG"></a>g) Sérialisation de fichiers JSON
 ## g.1) Introduction
 L'utilisation de Jackson est documentée, mais celle-ci semble fort dispersée sur le Web.
@@ -1019,7 +1090,7 @@ Le manuel utilisateur de cette librairie est disponible ici : https://commons.ap
 
 **Code du tutoriel** : si vous souhaitez directement accéder au code de la fin du tutoriel de 
 création d'une API de gestion de films pour ce module 1 : 
-https://github.com/e-vinci/baja-demos/tree/main/films-api-module1
+https://github.com/e-vinci/baja-demos/tree/main/films-api-tutorial1
 
 <br/>
 
@@ -1062,5 +1133,4 @@ de **level** ne correspond pas à une valeur autorisée, veuillez renvoyer un co
 ainsi que le message d'erreur suivant : « Lacks of mandatory info or unauthorized text level ».
 <br/>
 
-Veuillez tester toutes les méthodes offertes par votre application JAX-RS à l'aide du client HTTP 
-d'IntelliJ ou de REST Client (VS Code).
+Veuillez tester toutes les méthodes offertes par votre application JAX-RS à l'aide du client HTTP d'IntelliJ ou de REST Client (VS Code).

@@ -27,14 +27,10 @@ Dans le Module 1, nous avons développé ensemble une RESTful API permettant de 
 
 Nous allons maintenant faire un refactor de cette application afin de mieux architecturer le code.
 Voici les motivations pour réarchitecturer l'API :
-1. Souhait de ne pas mixer le code associé à la présentation des ressources, c'est-à-dire le code 
-s'occupant des réponses aux requêtes clients, au code associé à la gestion des données ;
+1. Souhait de ne pas mixer le code associé à la présentation des ressources, c'est-à-dire le code s'occupant des réponses aux requêtes clients, au code associé à la gestion des données ;
 on veut pouvoir mettre à jour la couche d'accès aux données sans devoir mettre à jour les Root Ressources.
-2. La partie business de l'application, en d'autres mots la logique d'accès aux opérations sur les 
-données, ne doit pas être séparée de la gestion des données.
-3. On veut pouvoir rapidement distinguer certaines parties de code : les objets du domaine, le main,  
-les opérations offertes sur les ressources, les utilitaires, la logique d'accès 
-aux opérations sur les données et la gestion des données.
+2. La partie business de l'application, en d'autres mots la logique d'accès aux opérations sur les données, ne doit pas être séparée de la gestion des données.
+3. On veut pouvoir rapidement distinguer certaines parties de code : les objets du domaine, le main, les opérations offertes sur les ressources, les utilitaires, la logique d'accès aux opérations sur les données et la gestion des données.
 
 <br/>
 
@@ -538,18 +534,17 @@ https://github.com/auth0/java-jwt
 
 Pour utiliser cette librairie, ajoutez une dépendance à **java-jwt** :
 - Via IntelliJ : 
-  - cliquez au sein de votre fichier **pom.xml** : **Code**, **Generate...**, **Add dependency...**
+  - cliquez au sein de votre fichier **pom.xml** : **Code**, **Generate...**, **Dependency**
   - tapez : **java-jwt**
   - Installez les dépendances Maven en cliquant sur le bouton représentant "**Load Maven Changes**"
-  - NB : si IntelliJ ne trouve pas votre dépendance, et que le numéro de version est mis en rouge
-  dans **pom.xml**, vous pouvez probablement résoudre cela en faisant un clic droit sur votre 
+  - NB : si IntelliJ ne trouve pas votre dépendance, et que le numéro de version est mis en rouge dans **pom.xml**, vous pouvez probablement résoudre cela en faisant un clic droit sur votre 
   **pom.xml**, **Maven**, **Reload project**.
 - Si vous n'avez pas IntelliJ, ajoutez cela au sein de **pom.xml** puis forcer l'installation des dépendances :
 ```markup
 <dependency>
             <groupId>com.auth0</groupId>
             <artifactId>java-jwt</artifactId>
-            <version>4.2.2</version>
+            <version>4.4.0</version>
 </dependency>
 ```
 <br/>
@@ -836,6 +831,8 @@ Veuillez tester les deux nouvelles opérations ajoutées.
 Pour ce faire, à l'aide d'InteliJ, ajoutez le fichier **users.http** à votre module ou 
 projet (dans le répertoire **requests** par exemple) avec ces requêtes :
 ```http-requests
+@baseUrl = http://localhost:8080
+
 ### Register one default user
 POST {{baseUrl}}/auths/register
 Content-Type: application/json
@@ -876,7 +873,6 @@ Content-Type: application/json
 
 Il ne vous reste plus qu'à exécuter votre RESTful API et exécuter les requêtes pour voir que l'API vous renvoie bien des tokens.
 
-Si vous n'utilisez pas IntelliJ, mais plutôt VS Code, il suffit juste de rajouter la variable **baseUrl** à votre script **auths.http**.
 <br/>
 
 # <a id="sectionE"></a>e) Utilisation de jbcrypt pour gérer les passwords
@@ -885,7 +881,7 @@ https://www.mindrot.org/projects/jBCrypt/
 
 Pour utiliser cette librairie, ajoutez une dépendance à **jbcrypt** :
 - Via IntelliJ : 
-  - cliquez au sein de votre fichier **pom.xml** : **Code** (ou clic droit dans **pom.xml**), **Generate...**, **Add dependency...**
+  - cliquez au sein de votre fichier **pom.xml** : **Code** (ou clic droit dans **pom.xml**), **Generate...**, **Dependency**
   - tapez : **jbcrypt**
   - Installez les dépendances Maven en cliquant sur le bouton représentant "**Load Maven Changes**"
   - NB : si IntelliJ ne trouve pas votre dépendance, et que le numéro de version est mis en rouge
@@ -974,7 +970,7 @@ soit les réponses d'une application JAX-RS.
 <br/>
 
 Si vous souhaitez des détails en plus du résumé présenté par la suite, les filtres sont expliqués dans le manuel de Jersey : 
-https://eclipse-ee4j.github.io/jersey.github.io/documentation/latest3x/filters-and-interceptors.html
+https://eclipse-ee4j.github.io/jersey.github.io/documentation/latest31x/filters-and-interceptors.html
 <br/>
 
 Les filtres « serveurs » sont illustré au sein de cette section via la mise en place 
@@ -1056,7 +1052,7 @@ Ensuite, la méthode de la ressource annotée par **@Authorize** est exécutée,
 <br/>
 
 La notion de **provider** est définie dans la spécification de JAX-RS : 
-https://jakarta.ee/specifications/restful-ws/3.0/jakarta-restful-ws-spec-3.0.html#providers. 
+https://jakarta.ee/specifications/restful-ws/3.1/jakarta-restful-ws-spec-3.1#providers. 
 
 <br/>
 
@@ -1253,6 +1249,8 @@ en appelant la méthode **set**, sera accessible dans les requêtes futures via 
 Voici le code permettant de tester l'API de gestion des films :
 
 ```text
+@baseUrl = http://localhost:8080 
+
 ### Read All films
 GET {{baseUrl}}/films
 
@@ -1561,7 +1559,7 @@ sérialisé et renvoyé au client via une Root Resource (**AuthsResource** dans 
 
 **Code du tutoriel** : si vous souhaitez directement accéder au code de la fin du tutoriel de 
 création d'une API de gestion de films pour ce module 2 : 
-https://github.com/e-vinci/baja-demos/tree/main/films-api-module2
+https://github.com/e-vinci/baja-demos/tree/main/films-api-tutorial2
 
 <br/>
 
@@ -1657,8 +1655,7 @@ Les ressources doivent persister au format JSON et vous devez échapper les cara
 Veuillez partir d'un archetype Maven comme décrit au point 
 [Module 1 : b) Création d'une première application sur base d'un Archetype Maven](/modules/1#sectionB).
 
-Veuillez intégrer à votre application les fichiers utiles de la démo https://github.com/e-vinci/baja-demos/tree/main/films-api-module2 présentée dans ce module-ci, 
-principalement : **pom.xml**, **Authorize**, **AuthorizationRequestFilter**, **Config**, **AuthsResource**, **UserDataService**
+Veuillez intégrer à votre application les fichiers utiles du tutoriel https://github.com/e-vinci/baja-demos/tree/main/films-api-tutorial2 présentée dans ce module-ci, principalement : **pom.xml**, **Authorize**, **AuthorizationRequestFilter**, **Config**, **AuthsResource**, **UserDataService**
 
 <br/>
 
