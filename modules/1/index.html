@@ -194,7 +194,7 @@ public List&lt;Film&gt; getAll(@DefaultValue(&quot;-1&quot;) @QueryParam(&quot;m
 }
 </code></pre><br/><p>On récupère le paramètre d&#x27;une requête GET nommé <strong>minimum-duration</strong> au sein de <strong>minimumDuration</strong>.</p><p>Par exemple, pour la requête <a href="http://localhost:8080/films?minimum-duration=160">http://localhost:8080/films?minimum-duration=160</a>,
 <strong>minimumDuration</strong> de <strong>getAll</strong> vaut <strong>160</strong>.</p><p>Pour une requête de type <strong>GET /films</strong>, si <strong>minimum-duration</strong> n&#x27;est pas indiqué dans l&#x27;URL,
-le paramètre <strong>minimumDuration</strong> de <strong>getAll</strong> vaudra <strong>-1</strong> grâce à <strong>@DefaultValue(&quot;-1&quot;)</strong>.</p><br/><h2>d.3) Données JSON dans le body de la requête</h2><h3>d.3.1 ) Désérialisation de JSON</h3><p>Nous allons souvent souhaiter récupérer des données qui ont été envoyées au format JSON sein
+le paramètre <strong>minimumDuration</strong> de <strong>getAll</strong> vaudra <strong>-1</strong> grâce à <strong>@DefaultValue(&quot;-1&quot;)</strong>.</p><br/><h2>d.3) Données JSON dans le body de la requête</h2><h3>d.3.1 ) Désérialisation de JSON</h3><p>Nous allons souvent souhaiter récupérer des données qui ont été envoyées au format JSON au sein
 du body d&#x27;une requête client. Quand c&#x27;est le cas, le framework doit pouvoir automatiquement
 désérialiser (ou parser) ces données JSON. En d&#x27;autres termes, le framework doit pouvoir injecter
 les données JSON dans un objet Java.</p><br/><p>Pour ce faire, notre application JAX-RS a déjà été correctement configurée pour pouvoir

@@ -147,7 +147,7 @@ Pour obtenir l&#x27;information associé au type passé à la classe générique
 il faut ajouter un argument à une fonction.</p><p>Ici, on a choisi d&#x27;ajouter le type au constructeur.</p><p>Veuillez créer le package <strong>utils</strong> au sein du package <strong>services</strong>.<br/>
 <!-- -->Voici le code mis à jour de la classe <strong>Json</strong> pour la rendre générique afin de la paramétrer sur base du type associé aux ressources : </p><pre><code class="language-java" metastring="numbered {1,6,10-12,15,41,49,51,53,56}">public class Json&lt;T&gt; {
 
-    private static final String DB_FILE_PATH = Config.getProperty(&quot;DatabaseFilePath&quot;);
+    private static final String DB_FILE_PATH = &quot;db.json&quot;;
     private static Path pathToDb = Paths.get(DB_FILE_PATH);
     private final static ObjectMapper jsonMapper = new ObjectMapper();
     private Class&lt;T&gt; type ;
