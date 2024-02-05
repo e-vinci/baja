@@ -136,7 +136,7 @@ JAVA, comme une ArrayList de films, vers du JSON.</p><p>Pour ce faire, veuillez 
 sur <a href="http://localhost:8080/films">http://localhost:8080/films</a></p><br/><p>NB : Pour cette version de Jersey, il n&#x27;est plus nécessaire d&#x27;enregistrer l&#x27;utilisation de Jackson au sein de l&#x27;application.
 Dans des versions plus ancienne, il fallait mettre à jour la classe <strong>Main</strong> :</p><pre><code class="language-java" metastring="{2}"> final ResourceConfig rc = new ResourceConfig().packages(&quot;be.vinci&quot;)
                 .register(JacksonFeature.class);
-</code></pre><br/><h2>c.4) Scope de l&#x27;injection d&#x27;une &quot;Root Resource&quot; au sein du framework</h2><h3>c.4.1) Scope par défaut</h3><p>Maintenant, nous allons cherchez à comprendre le scope de la Root Ressource créée par le framework.</p><p>Pour ce faire, modifiez votre méthode <strong>getAll</strong> pour qu&#x27;elle essaie d&#x27;effacer toujours le dernier
+</code></pre><br/><h2>c.4) Scope de l&#x27;injection d&#x27;une &quot;Root Resource&quot; au sein du framework</h2><h3>c.4.1) Scope par défaut</h3><p>Maintenant, nous allons chercher à comprendre le scope de la Root Ressource créée par le framework.</p><p>Pour ce faire, modifiez votre méthode <strong>getAll</strong> pour qu&#x27;elle essaie d&#x27;effacer toujours le dernier
 élément du tableau avant de renvoyer tous les éléments restant du tableau.</p><pre><code class="language-java" metastring="{3-4}">@GET
     @Produces(MediaType.APPLICATION_JSON)
     public List&lt;Film&gt; getAll() {
