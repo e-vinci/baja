@@ -225,7 +225,7 @@ Voici le code mis à jour de la classe **Json** pour la rendre générique afin 
 ```java numbered {1,6,10-12,15,41,49,51,53,56}
 public class Json<T> {
 
-    private static final String DB_FILE_PATH = Config.getProperty("DatabaseFilePath");
+    private static final String DB_FILE_PATH = "db.json";
     private static Path pathToDb = Paths.get(DB_FILE_PATH);
     private final static ObjectMapper jsonMapper = new ObjectMapper();
     private Class<T> type ;
