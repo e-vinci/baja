@@ -238,7 +238,7 @@ http correspondant au fait que tout est OK (code 200, <strong>Status.OK</strong>
 la réponse est très souvent construite par Jersey et Jackson automatiquement.
 Dès lors, si l&#x27;on souhaite envoyer autre chose en retour qu&#x27;un POJO qui doit être sérialisé,
 comme un code d&#x27;erreur, il va falloir utiliser une méthode du framework court-circuitant
-le processus de sérialisation.</p><br/><p>Pour renvoyer des codes d&#x27;erreur, nous l&#x27;avons déjà apperçu précédemment,
+le processus de sérialisation.</p><br/><p>Pour renvoyer des codes d&#x27;erreur, nous l&#x27;avons déjà aperçu précédemment,
 nous allons  utiliser le framework pour lancer une <strong>WebApplicationException</strong>.
 Cette exception sera utilisée pour construire la réponse à renvoyer
 au client. Une <strong>WebApplicationException</strong> reprendra tant le « http status code »
