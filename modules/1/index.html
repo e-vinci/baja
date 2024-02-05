@@ -242,7 +242,7 @@ le processus de sérialisation.</p><br/><p>Pour renvoyer des codes d&#x27;erreur
 nous allons  utiliser le framework pour lancer une <strong>WebApplicationException</strong>.
 Cette exception sera utilisée pour construire la réponse à renvoyer
 au client. Une <strong>WebApplicationException</strong> reprendra tant le « http status code »
-qu&#x27;éventuellement un message d&#x27;erreur de type <strong>text/plain</strong> dans le corps de la réponse.</p><p>Afin de voir de nouveaux exemple de code d&#x27;erreur, nous allons développer les opérations pour
+qu&#x27;éventuellement un message d&#x27;erreur de type <strong>text/plain</strong> dans le corps de la réponse.</p><p>Afin de voir de nouveaux exemples de code d&#x27;erreur, nous allons développer les opérations pour
 effacer et mettre à jour un film. Veuillez ajouter ces deux méthodes au sein de <strong>FilmResource</strong> :</p><pre><code class="language-java" metastring="numbered {6-7,10-11,22-23,26-27}">@DELETE
 @Path(&quot;/{id}&quot;)
 @Produces(MediaType.APPLICATION_JSON)
