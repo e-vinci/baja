@@ -32,7 +32,7 @@ La **Jakarta EE Platform** étend la **Java SE Platform** afin de faciliter le d
 
 ## 2.2	Jakarta EE
 La dernière version officielle de la spécification de Jakarta EE,
-disponible via ce [lien](https://jakarta.ee/specifications/platform/9.1/jakarta-platform-spec-9.1.html),
+disponible via ce [lien](https://jakarta.ee/specifications/platform/10/jakarta-platform-spec-10.0),
 fournit le diagramme suivant :
 <ScrollableImage name="jakarta-archi.svg" minWidth="600px" maxWidth="800px" />
 <br/>
@@ -43,7 +43,6 @@ la gestion de WebSocket, de Web Services (SOAP ou REST), le processing et bindin
 
 Les quatre types de composants d’applications qui doivent être supportés par un produit **Jakarta EE** et qui sont représentés ci-dessus sont :
 -	**Application Client Container** : ce sont typiquement des GUI qui s’exécutent sur un poste de travail (desktop).
--	**Applet Container** : ce sont généralement des GUI qui s’exécutent dans un browser web.
 -	**Web Container** : ils répondent aux requêtes http de clients Web ; typiquement, des servlets, des filtres et des écouteur d’événements web s’exécutent dans des web containers, afin de générer de l’HTML, du JSON, de l’XML…
 -	**Entreprise Beans Container** : exécution de composants dans un environnement supportant les transactions.
 
@@ -85,7 +84,7 @@ le pattern architectural REST.
 <br/>
 
 **JAX-RS** offre notamment des annotations pour mapper des ressources web à des POJOs 
-(**@Path**, **@Get**, **@Produces**…) et d’autres annotations pour les paramètres de méthodes afin de retirer l’information de requêtes (@PathParam, @QueryParam…).
+(**@Path**, **@Get**, **@Produces**…) et d’autres annotations pour les paramètres de méthodes afin de retirer l’information de requêtes (**@PathParam**, **@QueryParam**…).
 <br/>
 
 **POJO** = **Plain Old Java Object**. Un POJO est un objet ordinaire, il n’implémente pas une interface prédéfinie ou il n’étend pas une classe prédéfinie d’une Java Platform.
@@ -94,7 +93,7 @@ le pattern architectural REST.
 **JavaBean** = un POJO qui est sérialisable, qui a un constructeur sans argument, et qui permet d’accéder aux propriétés via des getters et des setters.
 <br/>
 
-**JAX-RX Specification** : https://jakarta.ee/specifications/restful-ws/3.0/jakarta-restful-ws-spec-3.0.html
+**JAX-RX Specification** : https://jakarta.ee/specifications/restful-ws/3.1/jakarta-restful-ws-spec-3.1
 <br/>
 
 L’implémentation de référence (de Sun) de **JAX-RS**, c’est **Jersey**, qui fait partie de **GlassFish** : https://eclipse-ee4j.github.io/jersey/
@@ -103,7 +102,7 @@ NB : Il existe d’autres implémentation de JAX-RX : Apache CXF, RESTEasy…
 <br/>
 
 Pour développer vos futures RESTFul APIs en Java sous Jersey, 
-la meilleure documentation est le **Jersey 3.0.3 User Guide** : https://eclipse-ee4j.github.io/jersey.github.io/documentation/latest3x/index.html 
+la meilleure documentation est le **Jersey 3.1.5 User Guide** : https://eclipse-ee4j.github.io/jersey.github.io/documentation/latest31x/index.html
 <br/>
 
 ## 2.5	Pile technologie pour les web services

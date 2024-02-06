@@ -1119,3 +1119,1125 @@ on ne souhaite pas renvoyer toutes les infos de la page associée à la news.
 Dans ce cas-ci, on enregistra et renverra que ces deux propriétés d'une page associée à une news : 
 **id** et **title**.
 <br/>
+=======
+---
+title: "Module 3 : JAX-RS avancé"
+description: "JAX-RS avancé"
+---
+
+# Module 3 : JAX-RS avancé
+Ce module vous offre le refactor d'une application JAX-RS pour appliquer les bonnes pratiques 
+du monde Java et approfondir certains concepts associés à la gestion des exceptions 
+et à la sérialisation au sein du framework. 
+
+Voici les sujets traités :
+- a) [Bonnes pratiques Java : "Factory" et injection de dépendances](/modules/3#sectionA)
+- b) [Mapping d'exceptions à des réponses](/modules/3#sectionB)
+- c) [Sérialisation de POJOs et filtrage d'attributs](/modules/3#sectionC)
+- d) [Exercice 3.1](/modules/3#sectionD)
+- e) [🍬 Exercice 3.2 optionnel](/modules/3#sectionE)
+
+<br/>
+
+# <a id="sectionA"></a>a) Bonnes pratiques Java : "Factory" et injection de dépendances
+## a.1) Introduction
+Dans les modules 1 & 2, nous avons développé ensemble une RESTful API permettant de gérer des films.
+
+Nous allons maintenant faire un refactor de cette application afin de mieux architecturer le code.
+Voici les motivations pour réarchitecturer l'API :
+- abstraction de l'implémentation de classes par l'utilisation d'interfaces ; 
+ainsi, lors d'interactions entre des objets de différents types, on ne doit pas se soucier 
+de l'implémentation des classes ; l'auteur d'une classe peut mettre à jour son implémentation 
+sans casser les interactions avec celle-ci ; 
+cela participe à la mise en place d'un couplage faible entre objets ;
+- éviter le couplage fort entre objets, notamment en injectant les objets de service 
+(n'ayant pas d'états) et en utilisant des « Factory » pour créer des objets 
+du domaine (ayant un état).
+
+<br/>
+
+## a.2) Les « Factory »
+Une « Factory » permet de créer des objets sans exposer leur logique de création 
+(au programme client appelant ces objets).
+<br/>
+
+On créera donc des objets du domaine, des objets ayant un état, via une « Factory » spécifique.
+<br/>
+
+De plus, pour ne pas dépendre d'une « Factory » spécifique, on pourra créer une interface 
+pour chaque implémentation d'une « Factory ».
+<br/>
+
+Nous allons donc mettre à jour notre API de gestion de films pour utiliser une factory :
+-	Extraire l'interface de **Film**. Via IntelliJ :
+    - Clic droit sur **Film**, **Refactor**, **Extract Interface...**
+    - Sélection de **Rename original class and use interface where possible**
+    - Pour **Rename implementation class to**, écrivez : **FilmImpl**
+    - Pour **Members To Form Interface**, sélectionnez (quasi) tout ; il n'est pas utile de 
+    sélectionner les méthodes qui redéfinissent la classe **Object** (**toString**, **equals**, 
+    **hashCode**...)
+-	L'interface **Film** est maintenant implémentée par **FilmImpl**
+-	De la même façon, veuillez extraire l'interface de **User** et renommer la classe 
+**User** en **UserImpl**.
+- Attention, les classes implémentant vos interfaces ne doivent pas être **public**.
+Supprimez **public** pour rendre vos classes "package friendly". Ainsi, seulement la factory 
+aura la possibilité de créer des objets du domaine.
+- Créer la classe **DomainFactory** au sein du package **domain**. Voici le code :
+```java
+package be.vinci.domain;
+
+public class DomainFactory{
+    @Override
+    public Film getFilm() {
+        return new FilmImpl();
+    }
+
+    @Override
+    public User getUser() {
+        return new UserImpl();
+    }
+}
+```
+- Extraire l'interface de **DomainFactory** et renommer cette classe en **DomainFactoryImpl** : 
+le contrat (ou l'interface) **DomainFactory** est maintenant implémentée par le service **DomainFactoryImpl** qui permet la création d'instance de **FilmImpl** ou de **UserImpl**.
+- Mettez à jour le code de votre API partout où des objets du domaine sont créés en utilisant 
+la factory. Dans un premier temps, nous allons créer une instance de la factory là où 
+elle doit être utilisée. Par la suite, nous verrons comment injecter une dépendance et devenir
+indépendant de l'implémentation de la factory là où elle est utilisée.
+Le seul endroit où l'on crée un objet du domaine directement, c'est dans **UserDataService**. 
+Modifiez cette classe :
+```java {3,9}
+public class UserDataService {
+    //...
+    private static DomainFactory myDomainFactory = new DomainFactoryImpl();
+    //...
+    public ObjectNode register(String login, String password) {
+        User tempUser = getOne(login);
+        if (tempUser != null) // the user already exists !
+            return null;
+        tempUser = myDomainFactory.getUser();
+    //...
+```
+- Vérifiez dans **FilmDataService** et **UserDataService** que **jsonDB** est créé en passant 
+l'interface (et non l'implémentation), par exemple pour **UserDataService** :
+```java
+private static Json<User> jsonDB = new Json<>(User.class);
+```
+
+<br/>
+
+A ce stade-ci, la librairie **Jackson** qui s'occupe de la désérialisation ne connait pas 
+l'implémentation à utiliser pour les POJOs. 
+<br/>
+
+Si vous exécutez l'application, elle lancera des exceptions lorsque vous appellerez certaines 
+opérations.
+
+<br/>
+
+## a.3) Désérialisation vers des POJOs cachés par une interface
+Afin de diminuer le couplage des objets, les objets du domaine sont cachés 
+derrière des interfaces.
+<br/>
+
+Afin que **Jackson** sache quelle implémentation est à utiliser pour la désérialisation 
+de JSON vers des POJOs associés à une interface, il faut l'indiquer via l'annotation
+**@JsonDeserialize**.
+<br/>
+
+Veuillez mettre à jour le code de **Film** :
+```java {3}
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+
+@JsonDeserialize(as = FilmImpl.class)
+public interface Film {
+
+```
+
+<br/>
+
+
+Veuillez mettre à jour le code de **User** : 
+```java {3}
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+
+@JsonDeserialize(as = UserImpl.class)
+public interface User {
+```
+
+<br/>
+
+Veuillez exécuter l'application et vous assurer que tout est en ordre.
+<br/>
+
+## a.4) L'injection de dépendances
+Afin d'injecter des dépendances au sein d'une application implémentant Jakarta EE, 
+« Jakarta Dependency Injection » (ou Jakarta DI) permet d'obtenir des objets tout 
+en maximisant la réutilisation, la testabilité et la maintenabilité en comparaison 
+avec des approches plus traditionnelles (utilisation de constructeurs…).
+
+Pour pouvoir utiliser les API d'injection de dépendances au sein de Jersey, 
+voici la librairie qui est contenue dans l'achetype Maven utilisé (voir fichier **pom.xml**) :
+```xml
+<dependency>
+        <groupId>org.glassfish.jersey.inject</groupId>
+        <artifactId>jersey-hk2</artifactId>
+</dependency>
+```
+
+<br/>
+
+Les services principaux de CDI (Contexts & Dependency Injection) sont :
+- Mise à disposition de contextes afin de lier le cycle de vie et les interactions de composants 
+ayant un état avec des contextes bien définis ;
+- L'injection de dépendance afin d'injecter des composants dans un application et choisir à 
+l'exécution l'implémentation particulière d'une interface (= le service) à injecter.
+
+<br/>
+
+Pour injecter un objet au sein d'une classe, il faut :
+- Configurer votre application JAX-RS pour indiquer comment l'injection de dépendance doit créer vos instances ; on peut le faire via **bind(service).to(contrat)** et le chaîner avec **.in( scope)**. Les scopes disponibles sont :
+    - **PerLookup** : pour chaque appel du service une instance du contrat est créée.
+    - **RequestScoped** : une instance créé pour chaque requête.
+    - **Singleton** : une seule instance du contrat créé par service.
+- Faire le binding via la redéfinition d'un **AbstractBinder**. Nous allons lier le contrat de 
+**DomainFactory** au service **DomainFactoryImpl** pour que une et une seul instance soit créée 
+et puisse être injectée dans l'application là où nécessaire.
+Pour ce faire, veuillez créer la classe **ApplicationBinder** au sein du package **utils** :
+```java
+package be.vinci.utils;
+
+import be.vinci.domain.DomainFactory;
+import be.vinci.domain.DomainFactoryImpl;
+import org.glassfish.hk2.utilities.binding.AbstractBinder;
+
+
+import jakarta.inject.Singleton;
+import jakarta.ws.rs.ext.Provider;
+
+@Provider
+public class ApplicationBinder extends AbstractBinder {
+
+    @Override
+    protected void configure() {
+        bind(DomainFactoryImpl.class).to(DomainFactory.class).in(Singleton.class);
+    }
+}
+```
+- Dans **Main**, il faut configurer l'application pour qu'elle utilise le nouveau Provider (**ApplicationBinder**).
+Veuillez mettre à jour **ResourceConfig** :
+```java {2}
+final ResourceConfig rc = new ResourceConfig().packages("be.vinci.api")
+        .register(ApplicationBinder.class);
+```
+- Pour rappel, l'annotation **@Provider** ci-dessus permet de fournir notre propre implémentation 
+d'un provider, de la rendre disponible à l'exécution, à notre application JAX-RS.
+- Nous allons maitenant injecter la factory via l'annotation **@Inject**, qui sera injectée 
+sous forme de **Singleton** (une et une seule instance) conformément à sa configuration 
+au sein de l'**AbstractBinder**. Veuillez mettre à jour le code de **UserDataService** :
+```java {3,9}
+public class UserDataService {
+    //...
+    @Inject
+    private DomainFactory myDomainFactory;
+    //...    
+```
+
+<br/>
+
+Veuillez exécuter l'application et vous assurer que tout est en ordre.
+
+<br/>
+
+Pour l'injection de dépendance au sein de Jakarta, une bonne documentation n'est pas évidente 
+à trouver. Les notions données ci-dessus devraient être suffisantes pour avancer. 
+<br/>
+
+Les services de données sont aussi des dépendances qui peuvent être utilisées à différents 
+endroit dans votre code. Nous allons donc utiliser le framework afin d'injecter ces dépendances.
+<br/>
+
+Dans un premier temps, veuillez extraire l'interface de **FilmDataService** comme expliqué 
+précédemment et renommer la classe en **FilmDataServiceImpl**.
+
+Veuillez aussi extraire l'interface de **UserDataService** et renommer la classe 
+en **UserDataServiceImpl**.
+
+Veuillez mettre à jour **ApplicationBinder** afin d'indiquer les implémentations à utiliser ainsi 
+que le scope des instances :
+```java {7-8}
+@Provider
+public class ApplicationBinder extends AbstractBinder {
+
+    @Override
+    protected void configure() {
+        bind(DomainFactoryImpl.class).to(DomainFactory.class).in(Singleton.class);
+        bind(FilmDataServiceImpl.class).to(FilmDataService.class).in(Singleton.class);
+        bind(UserDataServiceImpl.class).to(UserDataService.class).in(Singleton.class);
+    }
+}
+```
+<br/>
+
+Il reste maintenant à injecter les instances de nos services de données là où nécessaire, au 
+sein de nos Root Resources et de nos filtres (package **api**).
+
+Modifiez **FilmResource** :
+```java {4-5}
+@Singleton
+@Path("films")
+public class FilmResource {
+    @Inject
+    private FilmDataService myFilmDataService;
+```
+<br/>
+
+Modifiez **AuthsResource** :
+```java {4-5}
+@Singleton
+@Path("/auths")
+public class AuthsResource {
+    @Inject
+    private UserDataService myUserDataService;
+```
+<br/>
+
+Modifiez **AuthorizationRequestFilter** :
+```java {7-8}
+@Singleton
+@Provider
+@Authorize
+public class AuthorizationRequestFilter implements ContainerRequestFilter {
+    private final Algorithm jwtAlgorithm = Algorithm.HMAC256(Config.getProperty("JWTSecret"));
+    private final JWTVerifier jwtVerifier = JWT.require(this.jwtAlgorithm).withIssuer("auth0").build();
+    @Inject
+    private UserDataService myUserDataService ;
+```
+<br/>
+
+Voila, le refactoring du code est terminé. 
+
+Veuillez exécuter l'application et vous assurer que tout est en ordre.
+<br/>
+
+Voici quelques références si vous souhaitiez approfondir le sujet de CDI :
+- Basique Injection de dépendances via Jersey's HK2 : https://riptutorial.com/jersey/example/23632/basic-dependency-injection-using-jersey-s-hk2 
+- L'API pour l'injection de dépendance de Jakarta fournit quelques infos intéressantes : https://jakarta.ee/specifications/cdi/4.0/apidocs/
+- La spécification pour l'injection de dépendance : https://jakarta.ee/specifications/cdi/4.0/jakarta-cdi-spec-4.0
+
+<br/>
+
+# <a id="sectionB"></a>b) Mapping d'exceptions à des réponses
+## b.1) Introduction
+Dans le module 1 nous avons vu comment renvoyer des codes et des messages d'erreur 
+à l'aide de **WebApplicationException**.
+<br/>
+
+Il est possible aussi, au sein d'une application JAX-RS, de mapper directement 
+une Java Exception à une réponse http d'erreur.
+
+Ceci est décrit dans le manuel utilisateur de Jersey : https://eclipse-ee4j.github.io/jersey.github.io/documentation/latest31x/representations.html#d0e6279
+
+En résumé, il suffit :
+-	soit de définir une exception spécifique qui étend **WebApplicationException** ; 
+-	soit d'utiliser un provider personnalisé pour mapper une exception à une réponse ;
+dans ce cas, le provider doit implémenter l'interface **`ExceptionMapper<E extends Throwable>`**. 
+
+<br/>
+
+## b.2) Exceptions héritant de WebApplicationException
+Il est possible de créer ses propres classes d'exceptions où l'exception prend directement 
+en charge une réponse HTTP d'erreur au client.
+
+Dans le package **api.filters**, veuillez créer la classe **TokenDecodingException** :
+```java
+package be.vinci.api.filters;
+
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Response;
+
+public class TokenDecodingException extends WebApplicationException {
+    public TokenDecodingException() {
+        super(Response.status(Response.Status.UNAUTHORIZED)
+                .build());
+    }
+
+    public TokenDecodingException(String message) {
+        super(Response.status(Response.Status.UNAUTHORIZED)
+                .entity(message)
+                .type("text/plain")
+                .build());
+    }
+
+    public TokenDecodingException(Throwable cause) {
+        super(Response.status(Response.Status.UNAUTHORIZED)
+                .entity(cause.getMessage())
+                .type("text/plain")
+                .build());
+    }
+}
+```
+
+<br/>
+
+Au sein de **AuthorizationRequestFilter**, modifiez le code pour appeler 
+la nouvelle exception :
+```java {12}
+@Override
+public void filter(ContainerRequestContext requestContext) throws IOException {
+    String token = requestContext.getHeaderString("Authorization");
+    if (token == null) {
+        requestContext.abortWith(Response.status(Response.Status.UNAUTHORIZED)
+                .entity("A token is needed to access this resource").build());
+    } else {
+        DecodedJWT decodedToken = null;
+        try {
+            decodedToken = this.jwtVerifier.verify(token);
+        } catch (Exception e) {
+            throw new TokenDecodingException(e);
+        }
+```
+
+<br/>
+
+Ajoutez une nouvelle requête permettant de tester cette nouvelle exception au sein de 
+**films.http** :
+```http-request {4}
+### Test the TokenDecoding Exception
+POST {{baseUrl}}/films
+Content-Type: application/json
+Authorization: {{jamesToken}}modifiedtoken
+
+{
+  "title": "Venom: Let There Be Carnage",
+  "duration": 9,
+  "budget": 110,
+  "link": "https://en.wikipedia.org/wiki/Venom:_Let_There_Be_Carnage"
+}
+```
+
+<br/>
+
+## b.3) Mapping d'exceptions à des réponses
+Le rôle des Root Resources est notamment de préparer des réponses aux clients. Il est donc OK 
+de lancer des **WebApplicationException** à ce niveau là.
+<br/>
+
+Pour les exceptions lancées dans d'autres parties du code, comme par exemple dans 
+les services de données,  il est intéressant que les exceptions qui amènent à une 
+réponse au client soient traitées de manière centralisée plutôt que de gérer des 
+**try** / **catch** un peu partout.
+<br/>
+
+On peut aussi souhaiter centraliser certains traitement pour toutes les exceptions lancées,
+y-compris les **WebApplicationException** lancées dans les Root Resources.
+
+La centralisation de ces traitements d'exception peut se faire au sein d'un **ExceptionMapper**.
+C'est un lieu idéal pour traiter de tous les codes et messages d'erreur à envoyer aux client,
+pour créer des logs...
+<br/>
+
+Nous allons créer une **ExceptionMapper** nommé **WebExceptionMapper** dans le package **utils** 
+qui doit attraper toutes les exceptions, afficher la stack trace, puis envoyer une réponse 
+au client. Si de l'exception est de type **WebApplicationException**, on souhaite envoyer une réponse contenant le **status** 
+et **message** de celle-ci. Sinon on renvoie le code d'erreur **INTERNAL_SERVER_ERROR** et 
+le message associé à l'exception  :
+```java
+package be.vinci.utils;
+
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.ext.ExceptionMapper;
+import jakarta.ws.rs.ext.Provider;
+
+@Provider
+public class WebExceptionMapper implements ExceptionMapper<Throwable> {
+    @Override
+    public Response toResponse(Throwable exception) {
+        exception.printStackTrace();
+        if (exception instanceof WebApplicationException)
+            return ((WebApplicationException) exception).getResponse(); // the response is already prepared
+        return  Response.status( Response.Status.INTERNAL_SERVER_ERROR)
+                .entity(exception.getMessage())
+                .build();
+    }
+}
+```
+
+<br/>
+
+Dans **Main**, il faut configurer l'application pour qu'elle utilise le nouveau Provider (**WebExceptionMapper**).
+Veuillez mettre à jour **ResourceConfig** :
+```java {3}
+final ResourceConfig rc = new ResourceConfig().packages("be.vinci.api")
+        .register(ApplicationBinder.class)
+        .register(WebExceptionMapper.class);
+```
+
+<br/>
+
+Il y a un problème au niveau de Jersey. Si l'exception de type **WebApplicationException** 
+contient une réponse, les ExceptionMappers ne seront pas appelés : https://stackoverflow.com/questions/46339265/how-to-catch-webapplicationexception-with-jax-rs
+
+Dès lors, nous devons mettre à jour le code des **WebApplicationException** lancées afin de faire appel 
+au constructeur prenant le code d'erreur en 1er paramètre, puis le message d'erreur en deuxième 
+paramètre. Mettez à jour le code des classes **AuthsResource**, **FilmResource** et **TokenDecodingException**.
+
+Voici un exemple de mise à jour pour **AuthsResource** :
+```java numbered {14,21,33,41}
+@Singleton
+@Path("/auths")
+public class AuthsResource {
+    @Inject
+    private UserDataService myUserDataService;
+
+    @POST
+    @Path("login")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public ObjectNode login(JsonNode json) {
+        // Get and check credentials
+        if (!json.hasNonNull("login") || !json.hasNonNull("password")) {
+            throw new WebApplicationException("login or password required", Response.Status.BAD_REQUEST);
+        }
+        String login = json.get("login").asText();
+        String password = json.get("password").asText();
+        // Try to login
+        ObjectNode publicUser = myUserDataService.login(login, password);
+        if (publicUser == null) {
+            throw new WebApplicationException("Login or password incorrect", Response.Status.UNAUTHORIZED);
+        }
+        return publicUser;
+    }
+
+    @POST
+    @Path("register")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public ObjectNode register(JsonNode json) {
+        // Get and check credentials
+        if (!json.hasNonNull("login") || !json.hasNonNull("password")) {
+            throw new WebApplicationException("login or password required", Response.Status.BAD_REQUEST);
+        }
+        String login = json.get("login").asText();
+        String password = json.get("password").asText();
+
+        // Try to login
+        ObjectNode publicUser = myUserDataService.register(login, password);
+        if (publicUser == null) {
+            throw new WebApplicationException("this resource already exists", Response.Status.CONFLICT);
+        }
+        return publicUser;
+
+    }
+
+}
+```
+
+<br/>
+
+Veuillez exécuter l'application et vous assurer que tout est en ordre.
+<br/>
+
+# <a id="sectionC"></a>c) Sérialisation de POJOs et filtrage d'attributs
+## c.1) Introduction
+Il existe pas mal de situation où l'on souhaiterait renvoyer qu'un subset des attributs 
+d'un POJO (ou d'une liste de POJOs). 
+
+Imaginez par exemple que l'on souhaite lire la liste de tous les utilisateurs.
+<br/>
+
+Veuillez ajouter la classe **UserResource** au sein du package **api** :
+```java
+package be.vinci.api;
+
+import be.vinci.api.filters.Authorize;
+import be.vinci.domain.User;
+import be.vinci.services.UserDataService;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
+
+import java.util.List;
+
+@Singleton
+@Path("/users")
+public class UserResource {
+
+    @Inject
+    private UserDataService myUserDataService;
+
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @Authorize
+    public List<User> getAll() {
+        return myUserDataService.getAll();
+    }
+
+}
+```
+
+<br/>
+
+Nous allons tester l'opération de lecture des utilisateurs qui est protégée par un token.
+
+Ajoutez le script **user.http** à votre projet ou module IntelliJ :
+```http-requests
+### Login the default user
+POST {{baseUrl}}/auths/login
+Content-Type: application/json
+
+{
+"login":"james",
+"password":"password"
+}
+
+> {%
+client.global.set("jamesToken", response.body.token);
+%}
+
+### Read All users
+GET {{baseUrl}}/users
+Authorization: {{jamesToken}}
+```
+
+<br/>
+
+Si vous utilisez VS Code, convertissez ce script en créant une request variable pour récupérer 
+le token.
+
+<br/>
+
+Veuillez exécutez l'API de gestion de films et lancer les requêtes du script **user.http**.
+
+On remarque que toutes les informations des utilisateurs, y-compris le password, sont renvoyées 
+au client. 
+Dans ce cas-ci, il est important de filtrer l'attribut password de la représentation JSON qui sera 
+renvoyée au client.
+<br/>
+
+Il existe plusieurs mécanismes pour filtrer des attributs lors d'opérations de 
+sérialisation vers du JSON ou de désérialisation à partir de JSON.
+<br/>
+
+## c.2) Filtrer des attributs de la représentation JSON d'un POJO : les vues JSON
+Un des mécanismes de filtrage d'attributs qui a été sélectionné pour ce cours est la 
+création de vues JSON au sein d'un POJO.
+<br/>
+
+Ce mécanisme est réellement utile dans les cas où l'on doit filtrer différemment les attributs 
+d'un même POJO en fonction de l'opération de sérialisation.
+
+Par exemple, si vous devez sérialiser des données lors d'une réponse à un client, vous 
+ne souhaitez pas sérialiser le **password** d'un **User**.
+Par contre, lorsque vous sérialiser des données au sein d'un fichier JSON, pour enregistrer 
+les données d'un nouvel **User**, là vous souhaitez sérialiser le **password**.
+<br/>
+
+Pour ce faire, nous allons créer deux vues JSON que nous pourrons associer au POJO **User** implémenté 
+par **UserImpl** : 
+- une vue publique qui contient tous les attributs qui peuvent être lus par les clients de 
+l'API (l'id et le login dans le cadre d'un **User**) ;
+- une vue interne qui contient tous les attributs qui peuvent être écrits par l'API suite 
+aux opérations de création et de mise à jour d'une ressource 
+(l'id, le login et le password dans le cadre d'un **User**).
+
+<br/>
+
+Veuillez créer le package **view** et y ajouter la class **Views** : 
+```java
+package be.vinci.views;
+
+public class Views {
+    public static class Public {
+    }
+
+    public static class Internal extends Public {
+    }
+
+}
+```
+
+<br/>
+
+Cette classe **Views** va nous permettre d'annoter des vues JSON grâce aux deux classes 
+imbriquées vides.
+<br/>
+
+Attention à ce que la vue qui doit reprendre tous les attributs étende la vue plus restreinte.
+<br/>
+
+Ensuite, nous pouvons annotez nos vues JSON au sein du POJO **UserImpl** 
+via l'annotation **@JsonView** :
+```java {1,3,5,7}
+@JsonInclude(JsonInclude.Include.NON_NULL) // ignore all null fields in order to avoid sending props not linked to a JSON view
+class UserImpl implements User {
+    @JsonView(Views.Public.class)
+    private int id;
+    @JsonView(Views.Public.class)
+    private String login;
+    @JsonView(Views.Internal.class)
+    private String password;
+
+    @Override
+    public String getLogin() {
+        return login;
+    }
+    //.....
+```
+
+<br/>
+
+L'annotation **@JsonInclude(JsonInclude.Include.NON_NULL)** est très importante : 
+elle indique que seulement les attributs non nuls seront inclus dans la sérialisation.
+<br/>
+
+Pour filtrer seulement la vue publique d'une POJO lors de la sérialisation, 
+voici ce qui doit encore être fait. 
+On va renvoyer un POJO, ou une liste de POJOs dont tous les champs qui ne font pas partie 
+de la vue publique sont initialisés à la valeur par défaut (**null** pour les objets). 
+<br/>
+
+Puis, au sein d'une Root Resource (**UserResource**) on renverra ce POJO, ou liste de POJOs, 
+et la sérialisation sera fait automatiquement 
+vers du JSON, en ignorant les champs nuls (car, pour rappel, nous avons indiqué 
+**@JsonInclude(JsonInclude.Include.NON_NULL)** au sein de **UserImpl**).
+<br/>
+
+Veuillez ajouter deux méthodes au sein de la classe **Json** permettant de filtrer 
+une vue publique :
+```java
+public <T> List<T> filterPublicJsonViewAsList(List<T> list) {
+    try {
+        JavaType type = jsonMapper.getTypeFactory().constructCollectionType(List.class, this.type);
+        // serialize using JSON Views : public view (all fields not required in the
+        // views are not serialized)
+        String publicItemListAsString = jsonMapper.writerWithView(Views.Public.class).writeValueAsString(list);
+        // deserialize using JSON Views : Public View (all fields that are not serialized
+        // are set to their default values in the POJOs)
+        return jsonMapper.readerWithView(Views.Public.class).forType(type).readValue(publicItemListAsString);
+    } catch (JsonProcessingException e) {
+        e.printStackTrace();
+        return null;
+    }
+
+}
+
+public <T> T filterPublicJsonView(T item) {
+    try {
+        // serialize using JSON Views : public view (all fields not required in the
+        // views are not serialized)
+        String publicItemAsString = jsonMapper.writerWithView(Views.Public.class).writeValueAsString(item);
+        // deserialize using JSON Views : Public View (all fields that are not serialized
+        // are set to their default values in the POJO)
+        return jsonMapper.readerWithView(Views.Public.class).forType(type).readValue(publicItemAsString);
+    } catch (JsonProcessingException e) {
+        e.printStackTrace();
+        return null;
+    }
+
+}
+```
+
+<br/>
+
+Il nous reste à filtrer la liste de POJOs renvoyée par la méthode **getAll** de **UserDataServiceImpl**.
+Veuillez mettre à jour la méthode **getAll** :
+```java {4}
+@Override
+public List<User> getAll() {
+    var items = jsonDB.parse(COLLECTION_NAME);
+    return jsonDB.filterPublicJsonViewAsList(items);
+}
+```
+
+<br/>
+
+La méthode **filterPublicJsonViewAsList** va mettre les valeurs par défaut 
+pour tous les champs non publics (ici juste le password) d'un **User** et 
+renvoyer une liste de **User**.
+
+Ensuite, la méthode **getAll** de **UserResource** va renvoyer cette liste de **User** : 
+```java {4}
+@GET
+@Produces(MediaType.APPLICATION_JSON)
+@Authorize
+public List<User> getAll() {
+    System.out.println("getAll");
+    return myUserDataService.getAll();
+}
+```
+
+<br/>
+
+Le framework, via Jackson, va automatiquement convertir cette liste de **User** dont le password 
+est à null (valeur par défaut d'une **String**) en JSON, sans sérialiser le champs **password** 
+car nous avons annoté (**@JsonInclude(JsonInclude.Include.NON_NULL)**) **UserImpl** 
+pour spécifier que seulement les attributs non nuls seront inclus dans la sérialisation.
+
+<br/>
+
+Veuillez exécutez l'API de gestion de films et lancer les requêtes du script **user.http**.
+
+Vous remarquerez que le champs **password** a bien été filtré !
+<br/>
+
+**Attention** : cette méthode de filtrage peut causer des soucis si vous devez filtrer 
+des attributs de type primitif : **int**, **double**, **boolean**... 
+La valeur par défaut de ces attributs, n'est pas **null**. Dès lors, ces attributs 
+ne pourront pas être filtrés et seront sérialisés même si vous les annoter de 
+**@JsonView(Views.Internal.class)**.
+
+<br/>
+
+Pour visualiser cela, nous allons tester l'ajout d'un **User** avec deux nouvelles propriétés.
+Veuillez mettre à jour **UserImpl**:
+ ```java {1,9-12}
+@JsonInclude(JsonInclude.Include.NON_NULL) // ignore all null fields in order to avoid sending props not linked to a JSON view
+class UserImpl implements User {class UserImpl implements User {
+    @JsonView(Views.Public.class)
+    private int id;
+    @JsonView(Views.Public.class)
+    private String login;
+    @JsonView(Views.Internal.class)
+    private String password;
+    @JsonView(Views.Internal.class)
+    private int age;
+    @JsonView(Views.Internal.class)
+    private boolean married ;    
+
+    @Override
+    public int getAge() {
+        return age;
+    }
+
+    @Override
+    public void setAge(int age) {
+        this.age = age;
+    }
+
+    @Override
+    public boolean isMarried() {
+        return married;
+    }
+
+    @Override
+    public void setMarried(boolean married) {
+        this.married = married;
+    }
+    //.....
+```
+
+<br/>
+
+Veuillez aussi mettre à jour **User** en ajoutant ce code :
+```java {3-9}
+@JsonDeserialize(as = UserImpl.class)
+public interface User {
+    int getAge();
+
+    void setAge(int age);
+
+    boolean isMarried();
+
+    void setMarried(boolean married);
+```
+
+<br/>
+
+Veuillez mettre à jour la méthode **register** de **AuthsResource** (on va récupérer un **User** plutôt qu'un **JsonNode**):
+```java {5,7-8,12}
+@POST
+@Path("register")
+@Consumes(MediaType.APPLICATION_JSON)
+@Produces(MediaType.APPLICATION_JSON)
+public ObjectNode register(User user) {
+    // Get and check credentials
+    if (user == null || user.getPassword() == null || user.getPassword().isBlank()
+    || user.getLogin() == null || user.getLogin().isBlank()) {
+        throw new WebApplicationException("login or password required", Response.Status.BAD_REQUEST);
+    }
+    // Try to login
+    ObjectNode publicUser = myUserDataService.register(user);
+    if (publicUser == null) {
+        throw new WebApplicationException("this resource already exists", Response.Status.CONFLICT);
+    }
+    return publicUser;
+
+}
+```
+
+<br/>
+
+Veuillez mettre à jour la méthode **register** de **UserDataServiceImpl** (réception d'un **User** plutôt que d'un **login** et d'un **password**.) :
+```java {1-2}
+ @Override
+public ObjectNode register(User user) {        
+    if (getOne(user.getLogin()) != null) // the user already exists !
+        return null;        
+    
+    user.setPassword(user.hashPassword(user.getPassword()));
+
+    user = createOne(user); // add an id to the user and serialize it in db.json
+```
+
+<br/>
+
+Veuillez aussi mettre à jour l'interface **UserDataService** (paramètre de type **User** plutôt que un **login** et un **password** sous forme de **String**):
+```java {1}
+ObjectNode register(User user);
+```
+
+<br/>
+
+Veuillez ajouter ces nouvelles requêtes HTTP dans votre fichier **users.http** :
+```http-requests {1}
+### Register twig
+POST {{baseUrl}}/auths/register
+Content-Type: application/json
+
+{
+  "login":"twig",
+  "password":"twig",
+  "age": 25,
+  "married": true
+}
+
+### Login twig
+POST {{baseUrl}}/auths/login
+Content-Type: application/json
+
+{
+  "login":"twig",
+  "password":"twig"
+}
+
+> {%
+client.global.set("twigToken", response.body.token);
+%}
+
+### Read All users
+GET {{baseUrl}}/users
+Authorization: {{twigToken}}
+```
+
+<br/>
+
+Veuillez exécuter ces 3 requêtes dans l'ordre.
+On voit que la dernière requête nous renvoie tant **age** que **married** alors qu'on souhaite 
+les filtrer. De plus, les valeurs renvoyées sont les valeurs par défaut des attributs, même si 
+on avait initialisés ceux-ci.
+<br/>
+
+Pour résoudre cela, dans un premier temps, nous allons filtrer lors de la sérialisation 
+tous les attributs qui ont une valeur par défaut.
+
+Pour visualiser cela, veuillez mettre à jour **UserImpl**:
+ ```java {1}
+@JsonInclude(JsonInclude.Include.NON_DEFAULT) // ignore all default fields in order to avoid sending props not linked to a JSON view
+class UserImpl implements User {class UserImpl implements User {
+    @JsonView(Views.Public.class)    
+    //.....
+```
+
+<br/>
+
+Veuillez exécuter la dernière requêtes HTTP de votre fichier **users.http** :
+```http-requests 
+### Read All users
+GET {{baseUrl}}/users
+Authorization: {{twigToken}}
+```
+
+La limitation de cette solution, c'est que vous ne pouvez pas sérialiser les valeurs par défaut.
+
+Cela peut être acceptable si vous ne devez jamais sérialiser des **0** pour des nombres, 
+par contre, ça ne l'est pas si vous devez sérialiser des **boolean** : si la valeur est 
+**false** pour un attribut : il sera d'office filtré (valeur par défaut d'un boolean) 
+même si ça n'est pas ce que l'on veut. 
+N'hésitez pas à visualiser ce scénario si cela vous intéresse : il suffit d'appliquer la vue **Public** 
+à l'attribut **married** de **UserImpl** et de réexécuter la dernière requête HTTP 
+de **users.http**.
+
+<br/>
+
+Pour résoudre cette dernière partie, nous pouvons utiliser les "**Wrappers**" 
+des types primitifs : **Integer**, **Boolean**.
+<br/>
+
+Veuillez convertir **age** en **Integer** et **married** en **Boolean** au sein de **UserImpl**.
+Pour ce faire via IntelliJ : clic droit sur le type d'un attribut, **Refactor**, 
+**Type Migration...**, indiquez le nouveau type (**Integer** ou **Boolean**) puis clic sur 
+**Refactor**
+<br/>
+
+Une fois cela réalisé, exécutez votre API.
+
+Vous verrez que les attributs filtrés ne sont plus sérialisés lors de la réponse faite 
+aux requêtes clients. De plus, les attributs non 
+initialisés (dont la valeur vaut "null") ne sont pas sérialisés au sein de **db.json**
+(la méthode **valueToTree** dans **Json** ne crée pas de propriété JSON pour les attributs 
+qui sont "null").
+<br/>
+
+## c.3) Filtrer des attributs de la représentation JSON d'un POJO : spécifier l'accès à une propriété
+Un autre mécanisme de filtrage d'attributs est la spécification de comment les attributs peuvent 
+être accédés pendant la sérialisation ("**read**" du point de vue la propriété du POJO) 
+et la désérialisation ("**write**"").
+
+Il est plus simple à mettre en place que le mécanisme précédent.
+<br/>
+
+Ce mécanisme est applicable que dans les cas où toutes les opérations de sérialisation d'un même POJO doivent filtrer les mêmes atttributs. Par exemple, si vous devez sérialiser des données que lors de l'envoi des données aux clients, et que vous souhaitez toujours filtrer les mêmes données, alors ce mécanisme vous est recommandé.
+<br/>
+
+C'est éventuellement le cas lorsque l'on utilise une base de données pour faire persister les données.  
+Comme on ne doit pas sérialiser les données pour les enregistrer dans un fichier JSON, on doit juste filtrer les données lorsqu'elles sont renvoyées au format JSON pour répondre aux requêtes clientes.
+<br/>
+
+Voici au sein de **UserImpl** un exemple de comment filtrer l'attribut **password** 
+pour toutes les opérations de sérialisation d'un **User** :
+```java {1}
+class UserImpl implements User {
+    private int id;
+    private String login;
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    private String password;
+    private Integer age;
+    private Boolean married ;  
+    //.....
+```
+
+<br/>
+
+Le simple ajout de l'annotation **@JsonProperty(access = JsonProperty.Access.WRITE_ONLY)** permet 
+de ne jamais sérialiser le **password**. Par contre, il sera possible de désérialiser du JSON 
+(contenant une propriété **password**) pour créer un objet **User**.
+<br/>
+
+Les différentes spécifications d'accès aux propriétés lors de la sérialisation sont définis ici :
+https://www.javadoc.io/doc/com.fasterxml.jackson.core/jackson-annotations/latest/index.html
+
+<br/>
+
+**Code du tutoriel** : si vous souhaitez directement accéder au code de la fin du tutoriel de 
+création d'une API de gestion de films pour ce module 3 : 
+https://github.com/e-vinci/baja-demos/tree/main/films-api-tutorial3
+
+<br/>
+
+# <a id="sectionD"></a>d) Excercice 3.1
+Nous souhaitons continuer le développement du Headless CMS démarré au module 2. 
+
+Veuillez faire un refactoring du code de l'exercice 2.1 selon les concepts vus dans 
+ce module 3 : abstraction de l'implémentation de classes par l'utilisation d'interfaces, 
+ajout de factory et injection de dépendances.
+<br/>
+
+Veuillez centraliser la gestion des exceptions au sein d'un **ExceptionMapper** pour notamment 
+envoyer chaque message d'exception associé à une requête dans le corps de la réponse.
+<br/>
+ 
+Veuillez relancer les tests des méthodes offertes par votre application JAX-RS à l'aide d'un 
+client léger (HTTP client d'IntelliJ ou Rest Client de VS Code) pour vous assurer que votre 
+refactoring est OK.
+<br/>
+<br/>
+
+Est-ce que vous avez des blocs **try/catch** dans **PageResource** ?
+
+Si oui, faites-en sorte de les supprimer, tout en continuant de renvoyer un message d'erreur 
+au clients si nécessaire.
+<br/>
+
+Quelques tips :
+- Continuez le projet développé dans le cadre de l'Exercice 2.1 du module 2. Il n'est pas nécessaire 
+de créer un nouveau projet.
+- Reprenez **WebExceptionMapper**, vu dans le tutoriel de ce module 3, au sein de votre projet.
+
+<br/>
+
+# <a id="sectionE"></a>e) 🍬 Excercice 3.2 optionnel
+Nous souhaitons continuer le développement du Headless CMS démarré au module 2. 
+Pour ce faire, nous allons créer la RESTful API qui s'occupera de gérer les contenus 
+de type « News ».
+<br/>
+
+Une **News** aura un id, un titre, une courte description, un contenu, un auteur, 
+un statut de publication, une date et heure de création 
+(par défaut la date système au moment de la création de l'instance), 
+une date et heure ultime de péremption (un mois plus tard que la date de création par défaut), 
+une page associée (null par défaut) ainsi qu'une position dans la page associée. 
+Le statut de publication d'une news peut actuellement prendre comme valeur :
+-	« hidden »
+-	« published »
+
+<br/>
+
+Seul un utilisateur authentifié pourra créer des news.
+La modification d'une news, tout comme la suppression d'une news ne pourra se faire que 
+par son auteur.
+<br/>
+
+Est-ce qu'un auteur d'une news pourra associer une page à sa news qui est d'un autre auteur ? 
+Pour cet exercice, oui, l'association vers une page pourra se faire indépendamment de 
+l'auteur de la page.
+
+La lecture d'une news, ou de toutes les news, pourra être réalisée par n'importe quel utilisateur
+anonyme ou authentifié pour les news dont le statut vaut « published ».
+Pour les news dont le statut vaut « hidden », seul leur auteur authentifié pourra les lire.
+<br/>
+
+On souhaite aussi rendre possible la lecture de toutes les news associées à une page ; 
+pour ce faire la requête devra indiquer la page pour laquelle on souhaite obtenir 
+les news associées. 
+
+Tous les news dont le statut vaut « published » pourront être lues par n'importe 
+quel utilisateur (anonyme ou authentifié). 
+
+Pour les news dont le statut vaut « hidden », seul leur auteur authentifié pourra les lire.
+<br/>
+
+Veuillez développer une application JAX-RS mettant à disposition les opérations 
+décrites ci-dessus, en suivant les bonnes pratiques données dans ce module : abstraction 
+de l'implémentation, création de « Factory », injection de dépendances pour vos services…
+<br/>
+
+Dans un premier temps, veuillez formaliser les opérations associées à vos RESTful APIs 
+sous forme d'un tableau dans un fichier **README.md**. 
+Votre tableau devrait reprendre les conventions REST présentées au module 2  
+([c) Rappel de conventions sur les RESTful APIs, authentification & autorisation](/modules/2#sectionC)).
+<br/>
+ 
+Lors de l'implémentation de vos RESTful APIs, veuillez tester toutes les 
+méthodes offertes par votre application JAX-RS à l'aide d'un client léger (HTTP client d'IntelliJ 
+ou Rest Client de VS Code).
+<br/>
+<br/>
+
+Quelques tips :
+- Continuez le projet développé dans le cadre de l'Exercice 3.1. Il n'est pas nécessaire 
+de créer un nouveau projet.
+- Pour la sérialisation de dates, nous vous conseillons ce lien : https://www.baeldung.com/jackson-serialize-dates.
+Le plus simple est d'utiliser des instances de **Date** en les annotant via 
+**@JsonFormat** si vous souhaitez avoir une date formatée sous forme de String plutôt 
+qu'un nombre long.
+- Pour des valeurs par défaut de POJOs, n'hésitez pas à utiliser le constructeur sans paramètre :
+    - La date de création correspond à la date à l'instant de la création de l'instance.
+    - La date de péremption peut être automatiquement mise à un mois après la date de 
+    création en utilisant un objet de **Calendar** pour la conversion d'une date.
+
+<br/>
+
+**🍬 Challenges optionnels** : 
+- Nous vous proposons d'utiliser les vues JSON afin de ne jamais écrire 
+dans **db.json** toutes les infos liées à la page associée à une news. On souhaiterait juste 
+enregistrer l'id et le titre de la page.
+- De plus, lorsque que des infos associées à une news sont renvoyées à un client, 
+on ne souhaite pas renvoyer toutes les infos de la page associée à la news. 
+Dans ce cas-ci, on enregistra et renverra que ces deux propriétés d'une page associée à une news : 
+**id** et **title**.
+<br/>
