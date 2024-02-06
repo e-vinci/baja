@@ -334,7 +334,6 @@ public class FilmDataService {
 
   public Film updateOne(Film film, int id) {
     var films = jsonDB.parse(COLLECTION_NAME);
-    Film filmToUpdate = films.stream().filter(f -> f.getId() == id).findAny().orElse(null);
     film.setId(id);
     film.setTitle(StringEscapeUtils.escapeHtml4(film.getTitle()));
     film.setLink(StringEscapeUtils.escapeHtml4(film.getLink()));
