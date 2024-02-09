@@ -458,7 +458,7 @@ Il y a un problème au niveau de Jersey. Si l'exception de type **WebApplication
 contient une réponse, les ExceptionMappers ne seront pas appelés : https://stackoverflow.com/questions/46339265/how-to-catch-webapplicationexception-with-jax-rs
 
 Dès lors, nous devons mettre à jour le code des **WebApplicationException** lancées afin de faire appel 
-au constructeur prenant le code d'erreur en 1er paramètre, puis le message d'erreur en deuxième 
+au constructeur prenant le message d'erreur en 1er paramètre, puis le code d'erreur en deuxième 
 paramètre. Mettez à jour le code des classes **AuthsResource**, **FilmResource** et **TokenDecodingException**.
 
 Voici un exemple de mise à jour pour **AuthsResource** :
