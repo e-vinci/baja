@@ -101,7 +101,7 @@ au sein de l&#x27;<strong>AbstractBinder</strong>. Veuillez mettre à jour le co
     @Inject
     private DomainFactory myDomainFactory;
     //...    
-</code></pre><br/><p>Veuillez exécuter l&#x27;application et vous assurer que tout est en ordre.</p><br/><p>Pour l&#x27;injection de dépendance au sein de Jakarta, une bonne documentation n&#x27;est pas évidente
+</code></pre><br/><p>A ce stade-ci, si vous exécutez l&#x27;application, vous allez avoir des erreurs. Il faut injecter les data services avant d&#x27;avoir une application fonctionnelle. Veuillez donc continuer la suite du tutoriel pour finaliser l&#x27;injection.</p><br/><p>Pour l&#x27;injection de dépendance au sein de Jakarta, une bonne documentation n&#x27;est pas évidente
 à trouver. Les notions données ci-dessus devraient être suffisantes pour avancer. </p><br/><p>Les services de données sont aussi des dépendances qui peuvent être utilisées à différents
 endroit dans votre code. Nous allons donc utiliser le framework afin d&#x27;injecter ces dépendances.</p><br/><p>Dans un premier temps, veuillez extraire l&#x27;interface de <strong>FilmDataService</strong> comme expliqué
 précédemment et renommer la classe en <strong>FilmDataServiceImpl</strong>.</p><p>Veuillez aussi extraire l&#x27;interface de <strong>UserDataService</strong> et renommer la classe
