@@ -56,6 +56,7 @@ public class FilmDataService {
     public Film updateOne(Film film, int id) {
         var films = Json.parse();
         Film filmToUpdate = films.stream().filter(f -&gt; f.getId() == id).findAny().orElse(null);
+        if (filmToUpdate == null) return null;
         film.setId(id);
         film.setTitle(StringEscapeUtils.escapeHtml4(film.getTitle()));
         film.setLink(StringEscapeUtils.escapeHtml4(film.getLink()));
@@ -252,6 +253,7 @@ classe <strong>Json</strong> :</p><pre><code class="language-java" metastring="n
   public Film updateOne(Film film, int id) {
     var films = jsonDB.parse(COLLECTION_NAME);
     Film filmToUpdate = films.stream().filter(f -&gt; f.getId() == id).findAny().orElse(null);
+    if (filmToUpdate == null) return null;
     film.setId(id);
     film.setTitle(StringEscapeUtils.escapeHtml4(film.getTitle()));
     film.setLink(StringEscapeUtils.escapeHtml4(film.getLink()));
@@ -615,7 +617,7 @@ Content-Type: application/json
   &quot;login&quot;:&quot;john&quot;,
   &quot;password&quot;:&quot;123&quot;
 }
-</code></pre><br/><p>Il ne vous reste plus qu&#x27;à exécuter votre RESTful API et exécuter les requêtes pour voir que l&#x27;API vous renvoie bien des tokens.</p><br/><h1><a id="sectionE"></a>e) Utilisation de jbcrypt pour gérer les passwords</h1><p>Tant pour hasher un password que pour le vérifier, nous utiliserons la librairie jbcrype :
+</code></pre><br/><p>Il ne vous reste plus qu&#x27;à exécuter votre RESTful API et exécuter les requêtes pour voir que l&#x27;API vous renvoie bien des tokens.</p><br/><h1><a id="sectionE"></a>e) Utilisation de jbcrypt pour gérer les passwords</h1><p>Tant pour hasher un password que pour le vérifier, nous utiliserons la librairie jbcrypt :
 <a href="https://www.mindrot.org/projects/jBCrypt/">https://www.mindrot.org/projects/jBCrypt/</a></p><p>Pour utiliser cette librairie, ajoutez une dépendance à <strong>jbcrypt</strong> :</p><ul><li>Via IntelliJ : <ul><li>cliquez au sein de votre fichier <strong>pom.xml</strong> : <strong>Code</strong> (ou clic droit dans <strong>pom.xml</strong>), <strong>Generate...</strong>, <strong>Dependency</strong></li><li>tapez : <strong>jbcrypt</strong></li><li>Installez les dépendances Maven en cliquant sur le bouton représentant &quot;<strong>Load Maven Changes</strong>&quot;</li><li>NB : si IntelliJ ne trouve pas votre dépendance, et que le numéro de version est mis en rouge
 dans <strong>pom.xml</strong>, vous pouvez probablement résoudre cela en faisant un clic droit sur votre
 <strong>pom.xml</strong>, <strong>Maven</strong>, <strong>Reload project</strong>.</li></ul></li><li>Si vous n&#x27;avez pas IntelliJ, ajoutez cela au sein de <strong>pom.xml</strong> puis forcer l&#x27;installation des dépendances :</li></ul><pre><code class="language-markup">&lt;dependency&gt;

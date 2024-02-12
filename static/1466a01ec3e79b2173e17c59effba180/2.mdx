@@ -103,6 +103,7 @@ public class FilmDataService {
     public Film updateOne(Film film, int id) {
         var films = Json.parse();
         Film filmToUpdate = films.stream().filter(f -> f.getId() == id).findAny().orElse(null);
+        if (filmToUpdate == null) return null;
         film.setId(id);
         film.setTitle(StringEscapeUtils.escapeHtml4(film.getTitle()));
         film.setLink(StringEscapeUtils.escapeHtml4(film.getLink()));
@@ -335,6 +336,7 @@ public class FilmDataService {
   public Film updateOne(Film film, int id) {
     var films = jsonDB.parse(COLLECTION_NAME);
     Film filmToUpdate = films.stream().filter(f -> f.getId() == id).findAny().orElse(null);
+    if (filmToUpdate == null) return null;
     film.setId(id);
     film.setTitle(StringEscapeUtils.escapeHtml4(film.getTitle()));
     film.setLink(StringEscapeUtils.escapeHtml4(film.getLink()));
@@ -876,7 +878,7 @@ Il ne vous reste plus qu'à exécuter votre RESTful API et exécuter les requêt
 <br/>
 
 # <a id="sectionE"></a>e) Utilisation de jbcrypt pour gérer les passwords
-Tant pour hasher un password que pour le vérifier, nous utiliserons la librairie jbcrype :
+Tant pour hasher un password que pour le vérifier, nous utiliserons la librairie jbcrypt :
 https://www.mindrot.org/projects/jBCrypt/
 
 Pour utiliser cette librairie, ajoutez une dépendance à **jbcrypt** :
